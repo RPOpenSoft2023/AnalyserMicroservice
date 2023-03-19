@@ -1,5 +1,6 @@
 from django.shortcuts import render
 import pickle
+import json
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
@@ -49,6 +50,9 @@ class ParticularBankDetails():
 
 @api_view(['GET'])
 def bank_analysis(request):
+    temp=(request.body.decode('utf-8'))
+    temp=json.loads(temp)
+    print(temp['messsage'])
     resObj = BankAnalysisResponseBody(33, "AXIS")
     serializer = BankAnalyserSerializer(resObj)
     return Response(serializer.data)
