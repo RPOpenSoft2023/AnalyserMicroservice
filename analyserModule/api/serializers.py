@@ -15,6 +15,8 @@ class ParticularBankSerializer(serializers.Serializer):
 
 
 class BankAnalyserSerializer(serializers.Serializer):
+    totalCreditDeposit = serializers.DecimalField(
+        max_digits=None, decimal_places=None)
     volatilityScore = serializers.IntegerField()
     bankName = serializers.CharField(max_length=100)
     avgMonthlySpending = serializers.DecimalField(
