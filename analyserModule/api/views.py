@@ -4,7 +4,6 @@ import json
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
-from .serializers import BankAnalyserSerializer, GrossSummarySerializer, ParticularBankSerializer
 from .Helpers import Sources, Loans
 import pandas as pd
 # class BankAnalysisResponseBody():
@@ -65,24 +64,27 @@ def bank_analysis(request):
 def bank_statement_analysis(request):
     temp = (request.body.decode('utf-8'))
     temp = json.loads(temp)
-    # startDate = temp["start_date"]
-    # endDate = temp["end_date"]
+    bankStatement = pd.DataFrame(temp["bank_statement"])
+    startDate = temp["start_date"]
+    endDate = temp["end_date"]
     # bankStatement = temp["bank_statement"]
-    # BankName = temp["bank_name"]
-    # totalCreditDeposits = Sources.total_credit_deposits(
-    #     startDate, endDate, bankStatement)
+    BankName = temp["bank_name"]
+    totalCreditDeposits = Sources.total_credit_deposits(
+        startDate, endDate, bankStatement)
     # LoanInfo = Loans.getLoanInfo(startDate, endDate, bankStatement)
     # resObj = BankAnalysisResponseBody(
     #     bankName=BankName, totalCreditDeposit=totalCreditDeposits)
     # serializer = BankAnalyserSerializer(resObj)
+    bankJson = bankStatement.to_json(orient="table", index=False)
     return Response(
         {
-            "keys": temp.keys()
-            # "startDate": startDate,
-            # "endDate": endDate,
+            "keys": temp.keys(),
+            # "bankStatement": bankJson,
+            "startDate": startDate,
+            "endDate": endDate,
             # "bankStatement": bankStatement,
-            # "bankName": BankName,
-            # "totalCreditDeposits": totalCreditDeposits,
+            "bankName": BankName,
+            "totalCreditDeposits": totalCreditDeposits,
         },
         status=200
     )
