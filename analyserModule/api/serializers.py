@@ -37,6 +37,7 @@ class BankAnalyserSerializer(serializers.Serializer):
     daysToSpend50Percent = serializers.IntegerField()
     daysToSpend80Percent = serializers.IntegerField()
     recurringPayment = serializers.IntegerField()
+    z = serializers.IntegerField()
 
 
 #     def create(self, validated_data):
