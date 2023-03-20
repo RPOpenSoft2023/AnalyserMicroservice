@@ -3,7 +3,8 @@ import numpy as np
 import re
 
 
-def getLoanInfo(start_date, end_date, bank_statement):
+def getLoanInfo(start_date, end_date, bank_statement_var):
+    bank_statement = bank_statement_var.copy()
     # Initialize dict
     keywords = ['LOAN', 'Loan', 'loan', 'LN', 'ln']
     monthly_loan = {}     # dict: {key -> (debit, credit loan)}
