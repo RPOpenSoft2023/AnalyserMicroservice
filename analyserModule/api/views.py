@@ -4,7 +4,7 @@ import json
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
-from .Helpers import Sources, Loans, Info
+from .Helpers import Sources, Loans, Info, PaymentStat
 import pandas as pd
 
 
@@ -43,9 +43,20 @@ def bank_statement_analysis(request):
         # bankJson = bankStatement.to_json(orient="table", index=False)
         largeCreditSources = Sources.LargeCredSources(
             startDate, endDate, bankStatement)
-        print(largeCreditSources)
-        # largeDebitSources = Sources.LargeDebitSources(
-        #     startDate, endDate, bankStatement)
+        # print(largeCreditSources)
+        largeDebitSources = Sources.LargeDebitSources(
+            startDate, endDate, bankStatement)
+        startList = str(startDate).split('-')
+        endList = str(endDate).split('-')
+        startMonth = int(startList[1])
+        startYear = int(startList[0])
+        endMonth = int(endList[1])
+        endYear = int(endList[0])
+
+        data = PaymentStat.given_month_data(
+            startMonth, endMonth, startYear, endYear)
+        # print(type(startMonth))
+        # print(type(endMonth))
         return Response(
             {
                 "keys": temp.keys(),
@@ -55,10 +66,15 @@ def bank_statement_analysis(request):
                 # "bankStatement": bankStatement,
                 "bank_name": BankName,
                 "total_credit_deposits": totalCreditDeposits,
-                "income_specific": income,
+                "specific_income": income,
                 "total_income": totalIncome,
-                # "large_credit_sources": largeCreditSources,
-                # "large_debit_sources": largeDebitSources
+                "large_credit_sources": largeCreditSources,
+                "large_debit_sources": largeDebitSources,
+                "start_month": startMonth,
+                "start_year": startYear,
+                "end_month": endMonth,
+                "end_year": endYear,
+                # "bank_data": data,
             },
             status=200
         )
