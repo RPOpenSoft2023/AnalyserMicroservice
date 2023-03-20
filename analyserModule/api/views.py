@@ -51,66 +51,78 @@ import pandas as pd
 
 @api_view(['GET'])
 def bank_analysis(request):
-    temp = (request.body.decode('utf-8'))
-    temp = json.loads(temp)
-    bankAnalysis = temp["bankAnalysis"]
+    try:
+        temp = (request.body.decode('utf-8'))
+        temp = json.loads(temp)
+        bankAnalysis = temp["bankAnalysis"]
     # resObj = BankAnalysisResponseBody(33, "AXIS")
     # serializer = BankAnalyserSerializer(resObj)
     # return Response(serializer.data)
-    return Response({"bankAnalysis": bankAnalysis})
+        return Response({"bankAnalysis": bankAnalysis})
+    except Exception as e:
+        return Response({"Error": e}, status=400)
 
 
 @api_view(['GET'])
 def bank_statement_analysis(request):
-    temp = (request.body.decode('utf-8'))
-    temp = json.loads(temp)
-    bankStatement = pd.DataFrame(temp["bank_statement"])
-    startDate = temp["start_date"]
-    endDate = temp["end_date"]
-    # bankStatement = temp["bank_statement"]
-    BankName = temp["bank_name"]
-    totalCreditDeposits = Sources.total_credit_deposits(
-        startDate, endDate, bankStatement)
-    # LoanInfo = Loans.getLoanInfo(startDate, endDate, bankStatement)
-    # resObj = BankAnalysisResponseBody(
-    #     bankName=BankName, totalCreditDeposit=totalCreditDeposits)
-    # serializer = BankAnalyserSerializer(resObj)
-    bankJson = bankStatement.to_json(orient="table", index=False)
-    return Response(
-        {
-            "keys": temp.keys(),
-            # "bankStatement": bankJson,
-            "startDate": startDate,
-            "endDate": endDate,
-            # "bankStatement": bankStatement,
-            "bankName": BankName,
-            "totalCreditDeposits": totalCreditDeposits,
-        },
-        status=200
-    )
+    try:
+        temp = (request.body.decode('utf-8'))
+        temp = json.loads(temp)
+        bankStatement = pd.DataFrame(temp["bank_statement"])
+        startDate = temp["start_date"]
+        endDate = temp["end_date"]
+        # bankStatement = temp["bank_statement"]
+        BankName = temp["bank_name"]
+        totalCreditDeposits = Sources.total_credit_deposits(
+            startDate, endDate, bankStatement)
+        # LoanInfo = Loans.getLoanInfo(startDate, endDate, bankStatement)
+        # resObj = BankAnalysisResponseBody(
+        #     bankName=BankName, totalCreditDeposit=totalCreditDeposits)
+        # serializer = BankAnalyserSerializer(resObj)
+        bankJson = bankStatement.to_json(orient="table", index=False)
+        return Response(
+            {
+                "keys": temp.keys(),
+                # "bankStatement": bankJson,
+                "startDate": startDate,
+                "endDate": endDate,
+                # "bankStatement": bankStatement,
+                "bankName": BankName,
+                "totalCreditDeposits": totalCreditDeposits,
+            },
+            status=200
+        )
+    except Exception as e:
+        return Response({"Error": e}, status=400)
 
 
 @ api_view(['GET'])
 def gross_summary(request):
-    temp = (request.body.decode('utf-8'))
-    temp = json.loads(temp)
-    avgBal = temp["avgBal"]
-    # resObj = GrossSummaryResponseBody(temp["avgBal"])
-    # serializer = GrossSummarySerializer(resObj)
-    return Response({
-        "avgBal": avgBal
-    }, status=200)
+    try:
+        temp = (request.body.decode('utf-8'))
+        temp = json.loads(temp)
+        avgBal = temp["avgBal"]
+        # resObj = GrossSummaryResponseBody(temp["avgBal"])
+        # serializer = GrossSummarySerializer(resObj)
+        return Response({
+            "avgBal": avgBal
+        }, status=200)
+    except Exception as e:
+        return Response({"Error": e}, status=400)
 
 
 @ api_view(['GET'])
 def bank_name(request, bankName):
-    temp = (request.body.decode('utf-8'))
-    temp = json.loads(temp)
-    # resObj = ParticularBankDetails(bankName)
-    # serializer = ParticularBankSerializer(resObj)
+    try:
+        temp = (request.body.decode('utf-8'))
+        temp = json.loads(temp)
+        # resObj = ParticularBankDetails(bankName)
+        # serializer = ParticularBankSerializer(resObj)
 
-    return Response({
-        "bankName": bankName
-    }, status=200)
+        return Response({
+            "bankName": bankName
+        }, status=200)
+    except Exception as e:
+        return Response({"Error": e}, status=400)
 
 # Create your views here.
