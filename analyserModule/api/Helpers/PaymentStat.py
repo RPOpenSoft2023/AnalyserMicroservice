@@ -63,8 +63,7 @@ def monthwise_credit_debit(months, years, bank_statement):
     return data
 
 
-def given_month_data(startmonth, startyear, endmonth, endyear, bankstatementvar):
-    bankstatement = bankstatementvar.copy()
+def given_month_data(startmonth, startyear, endmonth, endyear, bankstatement):
     data = []
     if (endyear == startyear):
         for month in range(startmonth, endmonth+1):

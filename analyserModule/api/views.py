@@ -54,9 +54,11 @@ def bank_statement_analysis(request):
         endYear = int(endList[0])
 
         data = PaymentStat.given_month_data(
-            startMonth, endMonth, startYear, endYear)
+            startMonth, startYear, endMonth, endYear, bankStatement)
+        print(startMonth, endMonth)
         # print(type(startMonth))
         # print(type(endMonth))
+        print(data)
         return Response(
             {
                 "keys": temp.keys(),
@@ -74,7 +76,7 @@ def bank_statement_analysis(request):
                 "start_year": startYear,
                 "end_month": endMonth,
                 "end_year": endYear,
-                # "bank_data": data,
+                "bank_data": data,
             },
             status=200
         )
