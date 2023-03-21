@@ -37,6 +37,7 @@ def bank_analysis(request):
 def bank_account_init(request):
     try:
         file = request.data['file']
+        accountNumber = request.data['account_number']
         transactions = pd.read_csv(file)
         transactions = preprocessing(transactions)
         transactions['month'] = transactions['Date'].apply(getMonth)

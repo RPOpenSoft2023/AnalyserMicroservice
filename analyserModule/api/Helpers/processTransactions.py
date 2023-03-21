@@ -1,6 +1,7 @@
 import numpy as np
 import re
 import json
+from ..models import monthWiseAnalytics
 
 def preprocessing(transactions):
   transactions = transactions.dropna(axis = 0, subset=['Date', 'Particulars', 'Balance']) #removing rows with date as empty cell
@@ -21,24 +22,25 @@ def getEndDate(transactions):
 
 
 def processing(transactions):
-  disjointList = []
-  month = getStartDate(transactions).get('month')
-  year = getStartDate(transactions).get('year')
-  endMonth = getEndDate(transactions).get('month')
-  endYear = getEndDate(transactions).get('year')
-  while(1) : 
-    if (year > endYear) or ((year == endYear) and (month > endMonth)): 
-      break
-    else : 
-      # check with backend if that exists, if it does't
-      queriedTransactions = (transactions['month'] == month) & (transactions['year'] == year)
-      # update this to banking microservice, and process this only when it's successfully updated
-      disjointList.append([month, year, transactions[queriedTransactions]])
-    month += 1
-    if month == 12: 
-      month = 0
-      year += 1
-  return disjointList
+	disjointList = []
+	month = getStartDate(transactions).get('month')
+	year = getStartDate(transactions).get('year')
+	endMonth = getEndDate(transactions).get('month')
+	endYear = getEndDate(transactions).get('year')
+	while(1) : 
+		if (year > endYear) or ((year == endYear) and (month > endMonth)): 
+			break
+		else : 
+			# check with backend if that exists, if it does't
+			if(len(monthWiseAnalytics.objects.filter(month = month, year=year).values())== 0):		
+				queriedTransactions = (transactions['month'] == month) & (transactions['year'] == year)
+				# update this to banking microservice, and process this only when it's successfully updated
+				disjointList.append([month, year, transactions[queriedTransactions]])
+		month += 1
+		if month == 12: 
+			month = 0
+			year += 1
+	return disjointList
 
 def createSearchBase():
 	sectorWiseCompanies=[]
