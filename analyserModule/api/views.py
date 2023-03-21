@@ -44,7 +44,7 @@ def bank_account_init(request):
         for val in processing(transactions):
             monthWiseTransactions = val[2]
             currAnalDict = processingMonthWiseTransactions(monthWiseTransactions, val[0], val[1])
-            currAnal = monthWiseAnalytics(**currAnalDict, accountNumber=12, phoneNumber=12)
+            currAnal = monthWiseAnalytics(**currAnalDict, accountNumber=12)
             currAnal.save()
         return Response(status=200)
     except Exception as e:
