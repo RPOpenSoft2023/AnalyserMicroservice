@@ -5,8 +5,10 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
 from .Helpers import Sources, Loans, Info, PaymentStat
+from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions
 from .models import monthWiseAnalytics
 import pandas as pd
+
 
 
 @api_view(['GET'])
@@ -31,62 +33,16 @@ def bank_analysis(request):
     except Exception as e:
         return Response({"Error": e}, status=400)
 
-
-@api_view(['GET'])
-def bank_statement_analysis(request):
+@api_view(['POST'])
+def bank_account_init(request):
     try:
-        temp = (request.body.decode('utf-8'))
-        temp = json.loads(temp)
-        bankStatement = pd.DataFrame(temp["bank_statement"])
-        startDate = temp["start_date"]
-        endDate = temp["end_date"]
-        # bankStatement = temp["bank_statement"]
-        BankName = temp["bank_name"]
-        totalCreditDeposits = Sources.total_credit_deposits(
-            startDate, endDate, bankStatement)
-        income = Info.IncomeCalculator(startDate, endDate, bankStatement)
-        totalIncome = Info.TotalIncomeCalculator(bankStatement)
-        # LoanInfo = Loans.getLoanInfo(startDate, endDate, bankStatement)
-        # resObj = BankAnalysisResponseBody(
-        #     bankName=BankName, totalCreditDeposit=totalCreditDeposits)
-        # serializer = BankAnalyserSerializer(resObj)
-        # bankJson = bankStatement.to_json(orient="table", index=False)
-        largeCreditSources = Sources.LargeCredSources(
-            startDate, endDate, bankStatement)
-        # print(largeCreditSources)
-        largeDebitSources = Sources.LargeDebitSources(
-            startDate, endDate, bankStatement)
-        startList = str(startDate).split('-')
-        endList = str(endDate).split('-')
-        startMonth = int(startList[1])
-        startYear = int(startList[0])
-        endMonth = int(endList[1])
-        endYear = int(endList[0])
-
-        data = PaymentStat.given_month_data(
-            startMonth, endMonth, startYear, endYear)
-        # print(type(startMonth))
-        # print(type(endMonth))
-        return Response(
-            {
-                "keys": temp.keys(),
-                # "bankStatement": bankJson,
-                "start_date": startDate,
-                "end_date": endDate,
-                # "bankStatement": bankStatement,
-                "bank_name": BankName,
-                "total_credit_deposits": totalCreditDeposits,
-                "specific_income": income,
-                "total_income": totalIncome,
-                "large_credit_sources": largeCreditSources,
-                "large_debit_sources": largeDebitSources,
-                "start_month": startMonth,
-                "start_year": startYear,
-                "end_month": endMonth,
-                "end_year": endYear,
-                # "bank_data": data,
-            },
-            status=200
-        )
+        file = request.data['file']
+        transactions = pd.read_csv(file)
+        transactions = preprocessing(transactions)
+        for val in processing(transactions):
+            monthWiseTransactions = val[2]
+            print(processingMonthWiseTransactions(monthWiseTransactions, val[0], val[1]))
+        return Response(status=200)
     except Exception as e:
-        return Response({"Error": e}, status=400)
+        return Response({"Error": str(e)}, status=400)
+
