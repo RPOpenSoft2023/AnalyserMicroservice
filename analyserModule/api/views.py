@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
 from .Helpers import Sources, Loans, Info, PaymentStat
-from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions
+from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear
 from .models import monthWiseAnalytics
 import pandas as pd
 
@@ -39,9 +39,13 @@ def bank_account_init(request):
         file = request.data['file']
         transactions = pd.read_csv(file)
         transactions = preprocessing(transactions)
+        transactions['month'] = transactions['Date'].apply(getMonth)
+        transactions['year'] = transactions['Date'].apply(getYear)
         for val in processing(transactions):
             monthWiseTransactions = val[2]
-            print(processingMonthWiseTransactions(monthWiseTransactions, val[0], val[1]))
+            currAnalDict = processingMonthWiseTransactions(monthWiseTransactions, val[0], val[1])
+            currAnal = monthWiseAnalytics(**currAnalDict, accountNumber=12, phoneNumber=12)
+            currAnal.save()
         return Response(status=200)
     except Exception as e:
         return Response({"Error": str(e)}, status=400)

@@ -50,6 +50,13 @@ def createSearchBase():
 		sectorWiseCompanies.append(txt[val]) 
 	return [sectorsList, sectorWiseCompanies]
 
+def getMonth(date):
+  date = str(date).split('-')
+  return int(date[1]) - 1
+def getYear(date):
+  date = str(date).split('-')
+  return int(date[0])
+
 ## resolve error while updating the column for particulars
 def preProcessingMonthWise(monthWiseTransactions, searchBase):
 
