@@ -28,7 +28,7 @@ def AverageMonthlyIncomeCalculator(start_date, end_date, bank_statement_var):
     selected_rows = bank_statement.loc[start_date:end_date]
     Income = selected_rows['Credit'].sum()
     monthdiff = (end_date - start_date)/np.timedelta64(1, 'M')
-    print(monthdiff)
+    # print(monthdiff)
     MonthlyIncome = Income/monthdiff
     return MonthlyIncome
 

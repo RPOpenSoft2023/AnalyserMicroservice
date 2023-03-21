@@ -56,6 +56,7 @@ def bank_statement_analysis(request):
         data = PaymentStat.given_month_data(
             startMonth, startYear, endMonth, endYear, bankStatement)
         print(startMonth, endMonth)
+        loan_info = Loans.storeLoanInfo(bankStatement)
         # print(type(startMonth))
         # print(type(endMonth))
         print(data)
@@ -77,6 +78,7 @@ def bank_statement_analysis(request):
                 "end_month": endMonth,
                 "end_year": endYear,
                 "bank_data": data,
+                "loan_info": loan_info,
             },
             status=200
         )

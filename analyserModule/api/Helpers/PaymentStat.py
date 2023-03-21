@@ -63,7 +63,11 @@ def monthwise_credit_debit(months, years, bank_statement):
     return data
 
 
-def given_month_data(startmonth, startyear, endmonth, endyear, bankstatement):
+def month_specific_credit_debit(startmonth, startyear, endmonth, endyear, bankstatement):
+    """
+    when given the startmonth, startyear, endmonth, endyear and bankstatement it 
+    provides the list of debits and credits for all those months
+    """
     data = []
     if (endyear == startyear):
         for month in range(startmonth, endmonth+1):
