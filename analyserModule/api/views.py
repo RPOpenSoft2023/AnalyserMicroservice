@@ -5,19 +5,29 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
 from .Helpers import Sources, Loans, Info, PaymentStat
+from .models import monthWiseAnalytics
 import pandas as pd
 
 
 @api_view(['GET'])
 def bank_analysis(request):
     try:
-        temp = (request.body.decode('utf-8'))
-        temp = json.loads(temp)
-        bankAnalysis = temp["bankAnalysis"]
-    # resObj = BankAnalysisResponseBody(33, "AXIS")
-    # serializer = BankAnalyserSerializer(resObj)
-    # return Response(serializer.data)
-        return Response({"bankAnalysis": bankAnalysis})
+        data = request.data
+        startMonth, startYear, endMonth, endYear = data['start_month'], data['start_year'], data['end_month'], data['end_year']
+        accountNumber = data['account_number']
+        iterMonth, iterYear = startMonth, startYear
+
+        analytics = []
+        while((iterYear < endYear) or ((iterYear == endYear) and (iterMonth <= endMonth)) ):
+            curr = monthWiseAnalytics.objects.filter(accountNumber=accountNumber, month=iterMonth, year=iterYear).values()[0]
+            analytics.append(curr)
+            if(iterMonth == 11):
+                iterYear += 1
+                iterMonth = 0
+            else:
+                iterMonth += 1
+        return Response({"analytics": analytics})
+
     except Exception as e:
         return Response({"Error": e}, status=400)
 
@@ -80,35 +90,3 @@ def bank_statement_analysis(request):
         )
     except Exception as e:
         return Response({"Error": e}, status=400)
-
-
-@ api_view(['GET'])
-def gross_summary(request):
-    try:
-        temp = (request.body.decode('utf-8'))
-        temp = json.loads(temp)
-        avgBal = temp["avgBal"]
-        # resObj = GrossSummaryResponseBody(temp["avgBal"])
-        # serializer = GrossSummarySerializer(resObj)
-        return Response({
-            "avgBal": avgBal
-        }, status=200)
-    except Exception as e:
-        return Response({"Error": e}, status=400)
-
-
-@ api_view(['GET'])
-def bank_name(request, bankName):
-    try:
-        temp = (request.body.decode('utf-8'))
-        temp = json.loads(temp)
-        # resObj = ParticularBankDetails(bankName)
-        # serializer = ParticularBankSerializer(resObj)
-
-        return Response({
-            "bankName": bankName
-        }, status=200)
-    except Exception as e:
-        return Response({"Error": e}, status=400)
-
-# Create your views here.

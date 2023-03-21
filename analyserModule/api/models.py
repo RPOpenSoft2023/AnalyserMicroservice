@@ -7,5 +7,11 @@ class monthWiseAnalytics(models.Model):
     phoneNumber = models.BigIntegerField()
     month = models.IntegerField()
     year = models.IntegerField()
-    analysis = models.TextField() # analysis of current month
-    
+    # analysis = models.TextField()
+    # analysis for current month
+    largeCreditSources = models.JSONField()
+    largeDebitSources = models.JSONField()
+    avgSpending = models.DecimalField(decimal_places=2, max_digits=10)
+    avgBalance = models.DecimalField(decimal_places=2, max_digits=10)
+    spendingIncomeRatio = models.DecimalField(decimal_places=2, max_digits=10)
+    monthlyLoan = models.BigIntegerField()

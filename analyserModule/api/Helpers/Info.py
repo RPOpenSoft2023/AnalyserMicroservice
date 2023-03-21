@@ -3,7 +3,7 @@ import pandas as pd  # To read bank_statement
 
 # bank_statement = pd.read_csv('analyserModule/axis_bank_statement1.csv')
 
-bank_statement = pd.read_csv('analyserModule/axis_bank_statement1.csv')
+# bank_statement = pd.read_csv('analyserModule/axis_bank_statement1.csv')
 
 def IncomeCalculator(start_date, end_date, bank_statement_var):
     bank_statement = bank_statement_var.copy()

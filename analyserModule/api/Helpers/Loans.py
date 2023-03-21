@@ -3,6 +3,8 @@ import numpy as np
 import re
 
 
+# bank_statement = pd.read_csv('analyserModule/axis_bank_statement1.csv')
+
 def getLoanInfo(start_date, end_date, bank_statement_var):
     bank_statement = bank_statement_var.copy()
     # Initialize dict
