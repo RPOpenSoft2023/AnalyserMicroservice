@@ -21,7 +21,7 @@ def getEndDate(transactions):
   return date
 
 
-def processing(transactions):
+def processing(transactions, accountNumber):
 	disjointList = []
 	month = getStartDate(transactions).get('month')
 	year = getStartDate(transactions).get('year')
@@ -32,7 +32,7 @@ def processing(transactions):
 			break
 		else : 
 			# check with backend if that exists, if it does't
-			if(len(monthWiseAnalytics.objects.filter(month = month, year=year).values())== 0):		
+			if(len(monthWiseAnalytics.objects.filter(month = month, year=year, accountNumber=accountNumber).values())== 0):		
 				queriedTransactions = (transactions['month'] == month) & (transactions['year'] == year)
 				# update this to banking microservice, and process this only when it's successfully updated
 				disjointList.append([month, year, transactions[queriedTransactions]])

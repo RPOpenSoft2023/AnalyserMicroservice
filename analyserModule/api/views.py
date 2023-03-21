@@ -42,7 +42,7 @@ def bank_account_init(request):
         transactions = preprocessing(transactions)
         transactions['month'] = transactions['Date'].apply(getMonth)
         transactions['year'] = transactions['Date'].apply(getYear)
-        for val in processing(transactions):
+        for val in processing(transactions, accountNumber):
             monthWiseTransactions = val[2]
             currAnalDict = processingMonthWiseTransactions(monthWiseTransactions, val[0], val[1])
             currAnal = monthWiseAnalytics(**currAnalDict, accountNumber=accountNumber)
