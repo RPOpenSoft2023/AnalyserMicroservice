@@ -21,7 +21,7 @@ def bank_analysis(request):
         token = request.headers.get('Authorization')
 
         if(token):
-            response = requests.get(settings.USER_MICROSERVICE,
+            response = requests.get(settings.USER_MICROSERVICE + "verify_token",
                                         headers = { 'Authorization': token }
                                     )
             if(response.status_code != 200):
@@ -54,7 +54,7 @@ def bank_account_init(request):
         accountNumber = request.data.get('account_number')
 
         if(token):
-            response = requests.get(settings.USERS_MICROSERVICE_LINK,
+            response = requests.get(settings.USERS_MICROSERVICE + "verify_token",
                                         headers = { 'Authorization': token }
                                     )
             if(response.status_code != 200):
