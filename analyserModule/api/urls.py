@@ -4,4 +4,5 @@ from api import views
 urlpatterns = [
     path('bank-analysis', views.bank_analysis),
     path('add-account', views.bank_account_init),
+    path('statement-analyse', views.bank_statement_analyse)
 ]

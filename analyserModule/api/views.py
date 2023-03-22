@@ -50,4 +50,25 @@ def bank_account_init(request):
         return Response(status=200)
     except Exception as e:
         return Response({"Error": str(e)}, status=400)
+    
+@api_view(['POST'])
+def bank_statement_analyse(request):
+    try:
+        file = request.data['file']
+        transactions = pd.read_csv(file)
+        transactions = preprocessing(transactions)
+        transactions['month'] = transactions['Date'].apply(getMonth)
+        transactions['year'] = transactions['Date'].apply(getYear)
+
+        # put something which is not possible for account number
+        accountNumber = -1
+
+        analytics = []
+        for val in processing(transactions, accountNumber):
+            monthWiseTransactions = val[2]
+            currAnalDict = processingMonthWiseTransactions(monthWiseTransactions, val[0], val[1])
+            analytics.append(currAnalDict)
+        return Response({"analytics": analytics}, status=200)
+    except Exception as e:
+        return Response({"Error": str(e)}, status=400)
 
