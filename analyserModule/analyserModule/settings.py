@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-p$)^cvhvk9(m8tqmra2&^c9=yx-rqci2%*n^djc-wt1#_phk5$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -39,9 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'api',
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -50,6 +52,20 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_ALLOW_METHODS=[
+    'GET','POST','PUT','DELETE','PATCH','OPTIONS'
+]
+
+CORS_ALLOWED_ORIGINS = ['http://*']
+
+CORS_ALLOW_CREDENTIALS=True
+
+from corsheaders.defaults import default_headers
+
+CORS_ALLLOW_HEADERS = list(default_headers)
 
 ROOT_URLCONF = 'analyserModule.urls'
 
