@@ -15,13 +15,13 @@ import requests
 @api_view(['GET'])
 def bank_analysis(request):
     try:
-        data = request.GET
+        data = request.data
         startMonth, startYear, endMonth, endYear = map(int, [data['start_month'], data['start_year'], data['end_month'], data['end_year']])
         accountNumber = int(data['account_number'])
         token = request.headers.get('Authorization')
 
         if(token):
-            response = requests.get(settings.USER_MICROSERVICE + "verify_token",
+            response = requests.get(getattr(settings, "USER_MICROSERVICE", None) + "verify_token",
                                         headers = { 'Authorization': token }
                                     )
             if(response.status_code != 200):
@@ -54,7 +54,7 @@ def bank_account_init(request):
         accountNumber = request.data.get('account_number')
 
         if(token):
-            response = requests.get(settings.USERS_MICROSERVICE + "verify_token",
+            response = requests.get(getattr(settings, "USER_MICROSERVICE", None) + "verify_token",
                                         headers = { 'Authorization': token }
                                     )
             if(response.status_code != 200):
