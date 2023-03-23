@@ -154,7 +154,7 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
     debit = (monthWiseTransactions['Debit'].sum(axis = 0))
     return debit
 
-#   # monthwise spending/Income ratio
+  # monthwise spending/Income ratio
   def getSpendingExpenseRatio(monthWiseTransactions):
     spending = getTotalMonthIncome(monthWiseTransactions)
     expense = getTotalMonthExpense(monthWiseTransactions)
