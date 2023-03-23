@@ -2,6 +2,9 @@ import numpy as np
 import re
 import json
 from ..models import monthWiseAnalytics
+import requests
+from django.conf import settings
+import os
 
 def preprocessing(transactions):
   transactions = transactions.dropna(axis = 0, subset=['Date', 'Particulars', 'Balance']) #removing rows with date as empty cell
@@ -21,26 +24,36 @@ def getEndDate(transactions):
   return date
 
 
-def processing(transactions, accountNumber):
-	disjointList = []
-	month = getStartDate(transactions).get('month')
-	year = getStartDate(transactions).get('year')
-	endMonth = getEndDate(transactions).get('month')
-	endYear = getEndDate(transactions).get('year')
-	while(1) : 
-		if (year > endYear) or ((year == endYear) and (month > endMonth)): 
-			break
-		else : 
-			# check with backend if that exists, if it does't
-			if(len(monthWiseAnalytics.objects.filter(month = month, year=year, accountNumber=accountNumber).values())== 0):		
-				queriedTransactions = (transactions['month'] == month) & (transactions['year'] == year)
-				# update this to banking microservice, and process this only when it's successfully updated
-				disjointList.append([month, year, transactions[queriedTransactions]])
-		month += 1
-		if month == 12: 
-			month = 0
-			year += 1
-	return disjointList
+def processing(transactions, accountNumber, token=None):
+  disjointList = []
+  month = getStartDate(transactions).get('month')
+  year = getStartDate(transactions).get('year')
+  endMonth = getEndDate(transactions).get('month')
+  endYear = getEndDate(transactions).get('year')
+  while(1) : 
+    if (year > endYear) or ((year == endYear) and (month > endMonth)): 
+      break
+    else : 
+      # check with backend if that exists, if it does't
+      if(len(monthWiseAnalytics.objects.filter(month = month, year=year, accountNumber=accountNumber).values())== 0):		
+        queriedTransactions = (transactions['month'] == month) & (transactions['year'] == year)
+
+        # update this to banking microservice, and process this only when it's successfully updated
+        if(token):  
+          currTransactions = transactions[queriedTransactions]
+          currTransactions.to_csv("transactions.csv")
+          response = requests.post(settings.BANKING_MICROSERVICE + "/add_transactions", 
+                                   data={"account_number": accountNumber}, 
+                                   headers = { 'Authorization': token },
+                                   files={"transactions": "transactions.csv"})
+          print(response.status_code)
+          os.remove("transactions.csv")
+        disjointList.append([month, year, currTransactions])
+    month += 1
+    if month == 12: 
+      month = 0
+      year += 1
+  return disjointList
 
 def createSearchBase():
 	sectorWiseCompanies=[]
