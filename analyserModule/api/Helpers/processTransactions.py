@@ -122,7 +122,7 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
     def getTransactionTypes(monthWiseTransactions):
         dlen = len(monthWiseTransactions)
         transactionDict = dict()
-        keywords = ['upi', 'cheque', 'neft', 'rdgs']
+        keywords = ['upi', 'cheque', 'neft', 'rtgs']
         for val in keywords:
             queriedTransactions = (
                 monthWiseTransactions['Particulars']).str.contains(val)
@@ -208,6 +208,18 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
             }
             sectorsData[sector] = sectorData
         return sectorsData
+    # get taxed data
+    keyWords = ['gst', 'tax']
+
+    def getTaxedData(monthWiseTransactions):
+        taxedTransactions = []
+        for ind in monthWiseTransactions.index:
+            tax = (keyWords[0] in monthWiseTransactions['Particulars'][ind]) or (
+                keyWords[1] in monthWiseTransactions['Particulars'][ind])
+            if (tax):
+                taxedTransactions.append(
+                    monthWiseTransactions.iloc[ind].to_dict())
+        return taxedTransactions
 
     monthWiseTransactions = preProcessingMonthWise(
         monthWiseTransactions, searchBase)
@@ -220,7 +232,7 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
     totalMonthExpense = getTotalMonthExpense(monthWiseTransactions)
     spendingExpenseRatio = getSpendingExpenseRatio(monthWiseTransactions)
     categorizedData = getCategorizedData(monthWiseTransactions)
-
+    # taxedData = getTaxedData(monthWiseTransactions)
     return {
         "month": month,
         "year": year,
@@ -232,7 +244,8 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
         "totalMonthIncome": totalMonthIncome,
         "totalMonthExpense": totalMonthExpense,
         "spendingExpenseRatio": spendingExpenseRatio,
-        "categorizedData": categorizedData
+        "categorizedData": categorizedData,
+        # "taxedData": taxedData,
     }
 
 
@@ -240,10 +253,3 @@ def updateParticular(particular):
     particular = (re.split(r"[-/;,.\s]", particular))
     particular = "".join(particular)
     return particular.lower()
-
-
-def raiseCaution(transactions, accountNumber):
-    def atmCaution(transactions, accountNumber):
-        cautionList = []
-        for val in processing(transactions, accountNumber):
-            monthTransactions = val[2]
