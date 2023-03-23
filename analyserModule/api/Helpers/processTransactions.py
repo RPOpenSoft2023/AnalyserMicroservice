@@ -3,6 +3,10 @@ import re
 import json
 from ..models import monthWiseAnalytics
 
+import requests
+from django.conf import settings
+import os
+
 
 def preprocessing(transactions):
     # removing rows with date as empty cell
@@ -29,7 +33,7 @@ def getEndDate(transactions):
     return date
 
 
-def processing(transactions, accountNumber):
+def processing(transactions, accountNumber, token=None):
     disjointList = []
     month = getStartDate(transactions).get('month')
     year = getStartDate(transactions).get('year')
@@ -43,9 +47,18 @@ def processing(transactions, accountNumber):
             if (len(monthWiseAnalytics.objects.filter(month=month, year=year, accountNumber=accountNumber).values()) == 0):
                 queriedTransactions = (transactions['month'] == month) & (
                     transactions['year'] == year)
+
                 # update this to banking microservice, and process this only when it's successfully updated
-                disjointList.append(
-                    [month, year, transactions[queriedTransactions]])
+                if (token):
+                    currTransactions = transactions[queriedTransactions]
+                    currTransactions.to_csv("transactions.csv")
+                    response = requests.post(settings.BANKING_MICROSERVICE + "/add_transactions",
+                                             data={
+                                                 "account_number": accountNumber},
+                                             headers={'Authorization': token},
+                                             files={"transactions": "transactions.csv"})
+                    os.remove("transactions.csv")
+                disjointList.append([month, year, currTransactions])
         month += 1
         if month == 12:
             month = 0
