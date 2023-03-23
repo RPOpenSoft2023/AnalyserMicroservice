@@ -46,7 +46,6 @@ def processing(transactions, accountNumber, token=None):
                                    data={"account_number": accountNumber}, 
                                    headers = { 'Authorization': token },
                                    files={"transactions": "transactions.csv"})
-          print(response.status_code)
           os.remove("transactions.csv")
         disjointList.append([month, year, currTransactions])
     month += 1
