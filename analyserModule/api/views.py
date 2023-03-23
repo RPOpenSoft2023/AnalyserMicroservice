@@ -4,125 +4,94 @@ import json
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
-from .Helpers import Sources, Loans
+from .Helpers import Sources, Loans, Info, PaymentStat
+from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear
+from .models import monthWiseAnalytics
 import pandas as pd
-# class BankAnalysisResponseBody():
-#     def __init__(self,
-#                  bankName,
-#                  totalCreditDeposit=0,
-#                  volatilityScore=0.1,
-#                  avgMonthlySpending=0,
-#                  percentMonthlySpending=0,
-#                  SourcesOfLargeCredit=[],
-#                  SourcesOfLargeDebit=[],
-#                  frequencyOfCreditPayments=0,
-#                  frequencyOfDebitPayments=0,
-#                  frequencyOfPayment=0,
-#                  spendingToIncomeRatio=0,
-#                  daysToSpend50Percent=0,
-#                  daysToSpend80Percent=0,
-#                  recurringPayment=0
-#                  ):
-#         self.totalCreditDeposit = totalCreditDeposit
-#         self.volatilityScore = volatilityScore
-#         self.bankName = bankName
-#         self.avgMonthlySpending = avgMonthlySpending
-#         self.percentMonthlySpending = percentMonthlySpending
-#         self.SourcesOfLargeCredit = SourcesOfLargeCredit
-#         self.SourcesOfLargeDebit = SourcesOfLargeDebit
-#         self.frequencyOfCreditPayments = frequencyOfCreditPayments
-#         self.frequencyOfDebitPayments = frequencyOfDebitPayments
-#         self.frequencyOfPayment = frequencyOfPayment
-#         self.spendingToIncomeRatio = spendingToIncomeRatio
-#         self.daysToSpend50Percent = daysToSpend50Percent
-#         self.daysToSpend80Percent = daysToSpend80Percent
-#         self.recurringPayment = recurringPayment
-
-
-# class GrossSummaryResponseBody():
-#     def __init__(self, avgBalance):
-#         self.avgBalance = avgBalance
-
-
-# class ParticularBankDetails():
-#     def __init__(self, bankName):
-#         self.bankName = bankName
+from django.conf import settings
+import requests
 
 
 @api_view(['GET'])
 def bank_analysis(request):
     try:
-        temp = (request.body.decode('utf-8'))
-        temp = json.loads(temp)
-        bankAnalysis = temp["bankAnalysis"]
-    # resObj = BankAnalysisResponseBody(33, "AXIS")
-    # serializer = BankAnalyserSerializer(resObj)
-    # return Response(serializer.data)
-        return Response({"bankAnalysis": bankAnalysis})
+        data = request.data
+        startMonth, startYear, endMonth, endYear = map(int, [data['start_month'], data['start_year'], data['end_month'], data['end_year']])
+        accountNumber = int(data['account_number'])
+        token = request.headers.get('Authorization')
+
+        if(token):
+            response = requests.get(getattr(settings, "USER_MICROSERVICE", None) + "verify_token",
+                                        headers = { 'Authorization': token }
+                                    )
+            if(response.status_code != 200):
+                return Response({"message": "not logged in"}, status=401)
+
+        iterMonth, iterYear = startMonth, startYear
+
+        analytics = []
+        while((iterYear < endYear) or ((iterYear == endYear) and (iterMonth <= endMonth)) ):
+            currData = monthWiseAnalytics.objects.filter(accountNumber=accountNumber, month=iterMonth, year=iterYear).values()
+            if(len(currData) == 0):
+                return Response({"message": "analysis failed due to insufficient data"}, status=400)
+            curr = currData[0]
+            analytics.append(curr)
+            if(iterMonth == 11):
+                iterYear += 1
+                iterMonth = 0
+            else:
+                iterMonth += 1
+        return Response({"analytics": analytics})
+
     except Exception as e:
-        return Response({"Error": e}, status=400)
+        return Response({"Error": str(e)}, status=400)
 
-
-@api_view(['GET'])
-def bank_statement_analysis(request):
+@api_view(['POST'])
+def bank_account_init(request):
     try:
-        temp = (request.body.decode('utf-8'))
-        temp = json.loads(temp)
-        bankStatement = pd.DataFrame(temp["bank_statement"])
-        startDate = temp["start_date"]
-        endDate = temp["end_date"]
-        # bankStatement = temp["bank_statement"]
-        BankName = temp["bank_name"]
-        totalCreditDeposits = Sources.total_credit_deposits(
-            startDate, endDate, bankStatement)
-        # LoanInfo = Loans.getLoanInfo(startDate, endDate, bankStatement)
-        # resObj = BankAnalysisResponseBody(
-        #     bankName=BankName, totalCreditDeposit=totalCreditDeposits)
-        # serializer = BankAnalyserSerializer(resObj)
-        bankJson = bankStatement.to_json(orient="table", index=False)
-        return Response(
-            {
-                "keys": temp.keys(),
-                # "bankStatement": bankJson,
-                "startDate": startDate,
-                "endDate": endDate,
-                # "bankStatement": bankStatement,
-                "bankName": BankName,
-                "totalCreditDeposits": totalCreditDeposits,
-            },
-            status=200
-        )
+        file = request.data['file']        
+        token = request.headers.get('Authorization')
+        accountNumber = request.data.get('account_number')
+
+        if(token):
+            response = requests.get(getattr(settings, "USER_MICROSERVICE", None) + "verify_token",
+                                        headers = { 'Authorization': token }
+                                    )
+            if(response.status_code != 200):
+                return Response({"message": "not logged in"}, status=401)
+        if(not accountNumber):
+            return Response({"message": "account number required"}, status=400)
+
+        transactions = pd.read_csv(file)
+        transactions = preprocessing(transactions)
+        transactions['month'] = transactions['Date'].apply(getMonth)
+        transactions['year'] = transactions['Date'].apply(getYear)
+        for val in processing(transactions, accountNumber, token):
+            monthWiseTransactions = val[2]
+            currAnalDict = processingMonthWiseTransactions(monthWiseTransactions, val[0], val[1])
+            currAnal = monthWiseAnalytics(**currAnalDict, accountNumber=accountNumber)
+            currAnal.save()
+        return Response(status=200)
     except Exception as e:
-        return Response({"Error": e}, status=400)
-
-
-@ api_view(['GET'])
-def gross_summary(request):
+        return Response({"Error": str(e)}, status=400)
+    
+@api_view(['POST'])
+def bank_statement_analyse(request):
     try:
-        temp = (request.body.decode('utf-8'))
-        temp = json.loads(temp)
-        avgBal = temp["avgBal"]
-        # resObj = GrossSummaryResponseBody(temp["avgBal"])
-        # serializer = GrossSummarySerializer(resObj)
-        return Response({
-            "avgBal": avgBal
-        }, status=200)
+        file = request.data.get('file')
+
+        transactions = pd.read_csv(file)
+        transactions = preprocessing(transactions)
+        transactions['month'] = transactions['Date'].apply(getMonth)
+        transactions['year'] = transactions['Date'].apply(getYear)
+
+        accountNumber = -1
+        analytics = []
+        for val in processing(transactions, accountNumber):
+            monthWiseTransactions = val[2]
+            currAnalDict = processingMonthWiseTransactions(monthWiseTransactions, val[0], val[1])
+            analytics.append(currAnalDict)
+        return Response({"analytics": analytics}, status=200)
     except Exception as e:
-        return Response({"Error": e}, status=400)
+        return Response({"Error": str(e)}, status=400)
 
-
-@ api_view(['GET'])
-def bank_name(request, bankName):
-    try:
-        temp = (request.body.decode('utf-8'))
-        temp = json.loads(temp)
-        # resObj = ParticularBankDetails(bankName)
-        # serializer = ParticularBankSerializer(resObj)
-
-        return Response({
-            "bankName": bankName
-        }, status=200)
-    except Exception as e:
-        return Response({"Error": e}, status=400)
-
-# Create your views here.
