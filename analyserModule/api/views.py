@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
 from .Helpers import Sources, Loans, Info, PaymentStat
-from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear
+from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear, raiseCaution
 from .models import monthWiseAnalytics
 import pandas as pd
 from django.conf import settings
@@ -16,27 +16,29 @@ import requests
 def bank_analysis(request):
     try:
         data = request.GET
-        startMonth, startYear, endMonth, endYear = map(int, [data['start_month'], data['start_year'], data['end_month'], data['end_year']])
+        startMonth, startYear, endMonth, endYear = map(
+            int, [data['start_month'], data['start_year'], data['end_month'], data['end_year']])
         accountNumber = int(data['account_number'])
         token = request.headers.get('Authorization')
 
-        if(token):
+        if (token):
             response = requests.get(settings.USER_MICROSERVICE + "verify_token",
-                                        headers = { 'Authorization': token }
+                                    headers={'Authorization': token}
                                     )
-            if(response.status_code != 200):
+            if (response.status_code != 200):
                 return Response({"message": "not logged in"}, status=401)
 
         iterMonth, iterYear = startMonth, startYear
 
         analytics = []
-        while((iterYear < endYear) or ((iterYear == endYear) and (iterMonth <= endMonth)) ):
-            currData = monthWiseAnalytics.objects.filter(accountNumber=accountNumber, month=iterMonth, year=iterYear).values()
-            if(len(currData) == 0):
+        while ((iterYear < endYear) or ((iterYear == endYear) and (iterMonth <= endMonth))):
+            currData = monthWiseAnalytics.objects.filter(
+                accountNumber=accountNumber, month=iterMonth, year=iterYear).values()
+            if (len(currData) == 0):
                 return Response({"message": "analysis failed due to insufficient data"}, status=400)
             curr = currData[0]
             analytics.append(curr)
-            if(iterMonth == 11):
+            if (iterMonth == 11):
                 iterYear += 1
                 iterMonth = 0
             else:
@@ -46,20 +48,21 @@ def bank_analysis(request):
     except Exception as e:
         return Response({"Error": str(e)}, status=400)
 
+
 @api_view(['POST'])
 def bank_account_init(request):
     try:
-        file = request.data['file']        
+        file = request.data['file']
         token = request.headers.get('Authorization')
         accountNumber = request.data.get('account_number')
 
-        if(token):
+        if (token):
             response = requests.get(settings.USERS_MICROSERVICE + "verify_token",
-                                        headers = { 'Authorization': token }
+                                    headers={'Authorization': token}
                                     )
-            if(response.status_code != 200):
+            if (response.status_code != 200):
                 return Response({"message": "not logged in"}, status=401)
-        if(not accountNumber):
+        if (not accountNumber):
             return Response({"message": "account number required"}, status=400)
 
         transactions = pd.read_csv(file)
@@ -68,13 +71,16 @@ def bank_account_init(request):
         transactions['year'] = transactions['Date'].apply(getYear)
         for val in processing(transactions, accountNumber):
             monthWiseTransactions = val[2]
-            currAnalDict = processingMonthWiseTransactions(monthWiseTransactions, val[0], val[1])
-            currAnal = monthWiseAnalytics(**currAnalDict, accountNumber=accountNumber)
+            currAnalDict = processingMonthWiseTransactions(
+                monthWiseTransactions, val[0], val[1])
+            currAnal = monthWiseAnalytics(
+                **currAnalDict, accountNumber=accountNumber)
             currAnal.save()
         return Response(status=200)
     except Exception as e:
         return Response({"Error": str(e)}, status=400)
-    
+
+
 @api_view(['POST'])
 def bank_statement_analyse(request):
     try:
@@ -84,14 +90,14 @@ def bank_statement_analyse(request):
         transactions = preprocessing(transactions)
         transactions['month'] = transactions['Date'].apply(getMonth)
         transactions['year'] = transactions['Date'].apply(getYear)
-
+        transactions = transactions.reset_index()
         accountNumber = -1
         analytics = []
         for val in processing(transactions, accountNumber):
             monthWiseTransactions = val[2]
-            currAnalDict = processingMonthWiseTransactions(monthWiseTransactions, val[0], val[1])
+            currAnalDict = processingMonthWiseTransactions(
+                monthWiseTransactions, val[0], val[1])
             analytics.append(currAnalDict)
         return Response({"analytics": analytics}, status=200)
     except Exception as e:
         return Response({"Error": str(e)}, status=400)
-
