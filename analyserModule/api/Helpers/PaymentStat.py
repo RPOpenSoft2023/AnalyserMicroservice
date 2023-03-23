@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from datetime import date
-from . import basicUtility as bu
+# from . import basicUtility as bu
 
 
 def Total_Freq_of_Debit_Payment(start_date, end_date, bank_statement_var):

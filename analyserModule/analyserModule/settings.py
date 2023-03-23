@@ -140,5 +140,5 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-USER_MICROSERVICE = 'http://127.0.0.1:8000/user/api/'
-BANKING_MICROSERVICE = 'http://127.0.0.1:8002/banking/api/'
+USER_MICROSERVICE = 'http://35.247.79.215:80/user/api/'
+BANKING_MICROSERVICE = 'http://35.227.179.26:80/banking/api/'
