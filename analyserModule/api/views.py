@@ -4,8 +4,8 @@ import json
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
-from .Helpers import Sources, Loans, Info, PaymentStat
-from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear, raiseCaution
+# from .Helpers import Sources, Loans, Info, PaymentStat
+from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear
 from .models import monthWiseAnalytics
 import pandas as pd
 from django.conf import settings
@@ -15,12 +15,12 @@ import requests
 @api_view(['GET'])
 def bank_analysis(request):
     try:
-        data = request.GET
+        data = request.data
+        print(data)
         startMonth, startYear, endMonth, endYear = map(
             int, [data['start_month'], data['start_year'], data['end_month'], data['end_year']])
         accountNumber = int(data['account_number'])
         token = request.headers.get('Authorization')
-
         if (token):
             response = requests.get(settings.USER_MICROSERVICE + "verify_token",
                                     headers={'Authorization': token}
@@ -55,9 +55,9 @@ def bank_account_init(request):
         file = request.data['file']
         token = request.headers.get('Authorization')
         accountNumber = request.data.get('account_number')
-
+        # print(getattr(settings, "USER_MICROSERVICE", None))
         if (token):
-            response = requests.get(settings.USERS_MICROSERVICE + "verify_token",
+            response = requests.get(getattr(settings, "USER_MICROSERVICE", None) + "verify_token",
                                     headers={'Authorization': token}
                                     )
             if (response.status_code != 200):
@@ -76,7 +76,7 @@ def bank_account_init(request):
             currAnal = monthWiseAnalytics(
                 **currAnalDict, accountNumber=accountNumber)
             currAnal.save()
-        return Response(status=200)
+        return Response({"message": "File uploaded successfully"}, status=200)
     except Exception as e:
         return Response({"Error": str(e)}, status=400)
 
