@@ -15,7 +15,7 @@ import requests
 @api_view(['GET'])
 def bank_analysis(request):
     try:
-        data = request.data
+        data = request.GET
         startMonth, startYear, endMonth, endYear = map(int, [data['start_month'], data['start_year'], data['end_month'], data['end_year']])
         accountNumber = int(data['account_number'])
         token = request.headers.get('Authorization')
