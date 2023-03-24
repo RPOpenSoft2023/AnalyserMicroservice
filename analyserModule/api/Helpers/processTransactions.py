@@ -215,21 +215,19 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
 
     def getTaxedData(monthWiseTransactions):
         taxedTransactions = []
-        for ind in monthWiseTransactions.index:
+        for row in monthWiseTransactions.iterrows():
             tax = False
             for key in keyWords:
-                tax = tax or (key in monthWiseTransactions['Particular'][ind])
+                tax = tax or (key in row[1].Particulars)
             if (tax):
-                taxedTransactions.append(
-                    monthWiseTransactions.iloc[ind].to_dict())
+                taxedTransactions.append(row[1].to_dict())
         return taxedTransactions
 
     def getRTGSData(monthWiseTransactions):
         rtgsTransactions = []
-        for ind in monthWiseTransactions.index:
-            if ('rtgs' in monthWiseTransactions['Particular'][ind]):
-                rtgsTransactions.append(
-                    monthWiseTransactions.iloc[ind].to_dict())
+        for row in monthWiseTransactions.iterrows():
+            if ('rtgs' in row[1].Particulars):
+                rtgsTransactions.append(row[1].to_dict())
         return rtgsTransactions
 
     monthWiseTransactions = preProcessingMonthWise(
@@ -245,8 +243,8 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
     categorizedData = getCategorizedData(monthWiseTransactions)
     taxedData = getTaxedData(monthWiseTransactions)
     rtgsData = getRTGSData(monthWiseTransactions)
-    print(taxedData)
-    print(rtgsData)
+    # print(taxedData)
+    # print(rtgsData)
     return {
         "month": month,
         "year": year,

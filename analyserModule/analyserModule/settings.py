@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
+from corsheaders.defaults import default_headers
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -55,15 +56,14 @@ MIDDLEWARE = [
 
 CORS_ORIGIN_ALLOW_ALL = True
 
-CORS_ALLOW_METHODS=[
-    'GET','POST','PUT','DELETE','PATCH','OPTIONS'
+CORS_ALLOW_METHODS = [
+    'GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'
 ]
 
 CORS_ALLOWED_ORIGINS = ['http://*']
 
-CORS_ALLOW_CREDENTIALS=True
+CORS_ALLOW_CREDENTIALS = True
 
-from corsheaders.defaults import default_headers
 
 CORS_ALLLOW_HEADERS = list(default_headers)
 
@@ -141,4 +141,4 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 USER_MICROSERVICE = 'http://34.105.83.175:80/user/api/'
-BANKING_MICROSERVICE = 'http://35.227.179.26:80/banking/api/'
+BANKING_MICROSERVICE = 'http://35.247.79.215:80/banking/api/'
