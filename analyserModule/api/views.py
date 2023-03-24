@@ -3,6 +3,7 @@ import pickle
 import json
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from django.shortcuts import render
 from .Helpers import Sources, Loans, Info, PaymentStat
 from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear
@@ -99,3 +100,51 @@ def bank_statement_analyse(request):
     except Exception as e:
         return Response({"Error": str(e)}, status=400)
 
+
+@api_view(['POST'])
+def edit_transaction(request):
+    try:
+        token = request.headers.get('Authorization')
+        req_fields = ['transaction_id', 'category']
+        data = {}
+        for field in req_fields:
+            if not field in request.data:
+                raise ValidationError({field: f'{field} is required'})
+            else:
+                data[field] = request.data.get(field)
+
+        response = requests.post(settings.BANKING_MICROSERVICE + "get_transaction/",
+                                data={'transaction_id': data['transaction_id']},
+                                headers = { 'Authorization': token })
+        if response.ok:
+            raise ValidationError(response.json())
+        transaction = response.json()
+
+        response = requests.post(settings.BANKING_MICROSERVICE + "edit_transaction/",
+                                data={
+                                        'transaction_id': data['transaction_id'],
+                                        'category': data['new_category'],
+                                        'note': request.data.get('note',None),
+                                    },
+                                headers = { 'Authorization': token })
+        if response.ok:
+            raise ValidationError(response.json())
+
+        date = transaction.date
+        analytics = monthWiseAnalytics.objects.filter(year=int(str(date).split('-')[0])).filter(month = int(str(date).split('-')[1]))
+        categorizedData = analytics.categorizedData
+
+        # update transaction types count
+        old_category = transaction.category
+        # TODO: Code Below, get_type -- get the type of transaction (UPI | Cheque | ... )
+        # categorizedData[old_category]['transaction_types'][get_type(transaction['description'])] -=1
+        # categorizedData[data['category']]['transaction_types'][get_type(transaction['category'])] +=1
+
+        # category totals
+        categorizedData[old_category]['totalSectorMonthIncome'] -= transaction['credit']
+        categorizedData[data['category']]['totalSectorMonthIncome'] += transaction['credit']
+        categorizedData[old_category]['totalSectorMonthExpense'] -= transaction['debit']
+        categorizedData[data['category']]['totalSectorMonthExpense'] += transaction['debit']
+
+    except Exception as e:
+        return Response({"Error": str(e)}, status=400)
