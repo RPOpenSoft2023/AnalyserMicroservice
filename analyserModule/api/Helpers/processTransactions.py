@@ -7,6 +7,8 @@ import requests
 from django.conf import settings
 import os
 
+searchBase = list()
+
 def preprocessing(transactions):
   transactions = transactions.dropna(axis = 0, subset=['Date', 'Particulars', 'Balance']) #removing rows with date as empty cell
   transactions = transactions.replace(np.nan, 0) #replacing NaN with 0.0
@@ -45,23 +47,25 @@ def processing(transactions, accountNumber, token=None):
         # update this to banking microservice, and process this only when it's successfully updated
         if(token):  
           if  mergedTransactions.empty : 
+              currTransactions = preProcessingMonthWise(currTransactions)
               mergedTransactions = currTransactions
           else : 
+              currTransactions = preProcessingMonthWise(currTransactions)
               mergedTransactions = pd.concat([mergedTransactions, currTransactions])
         disjointList.append([month, year, currTransactions])
     month += 1
     if month == 12: 
       month = 0
       year += 1
-  if token and not mergedTransactions.empty: 
-    mergedTransactions.to_csv("transactions.csv")
-    with open("transactions.csv") as f:
-      response = requests.post(settings.BANKING_MICROSERVICE + "add_transactions/", 
-                              data={"account_number": accountNumber}, 
-                              headers = { 'Authorization': token },
-                              files={"transactions": f})
-      print(response.json(), response.status_code)
-    os.remove("transactions.csv")
+  # if token and not mergedTransactions.empty: 
+  mergedTransactions.to_csv("transactions.csv")
+  with open("transactions.csv") as f:
+    response = requests.post(settings.BANKING_MICROSERVICE + "add_transactions/", 
+                            data={"account_number": accountNumber}, 
+                            headers = { 'Authorization': token },
+                            files={"transactions": f})
+    print(response.json(), response.status_code)
+  os.remove("transactions.csv")
   return disjointList
 
 def createSearchBase():
@@ -82,33 +86,29 @@ def getYear(date):
   return int(date[0])
 
 ## resolve error while updating the column for particulars
-def preProcessingMonthWise(monthWiseTransactions, searchBase):
-
-	def updateParticular(particular):
-		particular = (re.split(r"[-/;,.\s]", particular))
-		particular = "".join(particular)
-		return particular.lower()
+def preProcessingMonthWise(monthWiseTransactions):
+  def updateParticular(particular):
+    particular = (re.split(r"[-/;,.\s]", particular))
+    particular = "".join(particular)
+    return particular.lower()
 
 	#function to search sector from a function
-	def searchingSector(particular):
-		sectorsList = searchBase[0]
-		sectorWiseCompanies = searchBase[1]
-		# preprocessing of data will be on top
-		particular = ("".join(re.split(r"[-/;,.\s]", particular))).lower()
-		for ind, sector in enumerate(sectorsList):
-			for company in sectorWiseCompanies[ind] : 
-				if(company in particular):
-					return sector
-		return sectorsList[-1]
-
-	monthWiseTransactions.Particulars = monthWiseTransactions['Particulars'].apply(updateParticular)
-	monthWiseTransactions['Sector'] = monthWiseTransactions['Particulars'].apply(searchingSector)
-	return monthWiseTransactions
+  def searchingSector(particular):
+    sectorsList = searchBase[0]
+    sectorWiseCompanies = searchBase[1]
+    # preprocessing of data will be on top
+    particular = ("".join(re.split(r"[-/;,.\s]", particular))).lower()
+    for ind, sector in enumerate(sectorsList):
+      for company in sectorWiseCompanies[ind] : 
+        if(company in particular):
+          return sector
+    return sectorsList[-1]
+  searchBase = createSearchBase()
+  monthWiseTransactions.Particulars = monthWiseTransactions['Particulars'].apply(updateParticular)
+  monthWiseTransactions['Category'] = monthWiseTransactions['Particulars'].apply(searchingSector)
+  return monthWiseTransactions
 
 def processingMonthWiseTransactions(monthWiseTransactions, month, year):
-
-  searchBase = createSearchBase()
-  
   def getTransactionTypes(monthWiseTransactions):
     dlen = len(monthWiseTransactions)
     transactionDict = dict()
@@ -177,7 +177,7 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
     sectorsList = searchBase[0]
     sectorsData = dict()
     for sector in sectorsList : 
-      queriedSectorWiseTransactions = monthWiseTransactions['Sector'] == sector
+      queriedSectorWiseTransactions = monthWiseTransactions['Category'] == sector
       sectorWiseMonthTransactions = monthWiseTransactions[queriedSectorWiseTransactions]
       transactionTypes = getTransactionTypes(sectorWiseMonthTransactions)
       totalSectorMonthIncome = getTotalMonthIncome(sectorWiseMonthTransactions)
@@ -191,7 +191,8 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
       sectorsData[sector] = sectorData
     return sectorsData
   
-  monthWiseTransactions = preProcessingMonthWise(monthWiseTransactions, searchBase)
+  # monthWiseTransactions = preProcessingMonthWise(monthWiseTransactions, searchBase)
+  searchBase = createSearchBase()
   loanDetails = getLoanDetails(monthWiseTransactions)
   transactionTypes = getTransactionTypes(monthWiseTransactions) 
   averageDayWiseExpense = getAverageDayWiseExpense(monthWiseTransactions)
@@ -201,7 +202,6 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
   totalMonthExpense = getTotalMonthExpense(monthWiseTransactions)
   spendingExpenseRatio = getSpendingExpenseRatio(monthWiseTransactions)
   categorizedData = getCategorizedData(monthWiseTransactions)
-
   return {
       "month" : month,
       "year" : year,
