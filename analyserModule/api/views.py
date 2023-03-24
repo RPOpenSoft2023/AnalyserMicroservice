@@ -19,13 +19,14 @@ def bank_analysis(request):
         startMonth, startYear, endMonth, endYear = map(int, [data['start_month'], data['start_year'], data['end_month'], data['end_year']])
         accountNumber = int(data['account_number'])
         token = request.headers.get('Authorization')
-
         if(token):
-            response = requests.get(getattr(settings, "USER_MICROSERVICE", None) + "verify_token",
+            response = requests.get(settings.USER_MICROSERVICE + "verify_token",
                                         headers = { 'Authorization': token }
                                     )
             if(response.status_code != 200):
                 return Response({"message": "not logged in"}, status=401)
+        else:
+            return Response({"message": "not logged in"}, status=401)
 
         iterMonth, iterYear = startMonth, startYear
 
@@ -59,6 +60,9 @@ def bank_account_init(request):
                                     )
             if(response.status_code != 200):
                 return Response({"message": "not logged in"}, status=401)
+        else:
+            return Response({"message": "not logged in"}, status=401)
+        
         if(not accountNumber):
             return Response({"message": "account number required"}, status=400)
 
