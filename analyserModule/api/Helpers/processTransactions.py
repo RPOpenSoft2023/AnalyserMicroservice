@@ -40,19 +40,20 @@ def processing(transactions, accountNumber, token=None):
       if(len(monthWiseAnalytics.objects.filter(month = month, year=year, accountNumber=accountNumber).values())== 0):		
         queriedTransactions = (transactions['month'] == month) & (transactions['year'] == year)
 
+        currTransactions = transactions[queriedTransactions]
+        
         # update this to banking microservice, and process this only when it's successfully updated
         if(token):  
-          currTransactions = transactions[queriedTransactions]
           if  mergedTransactions.empty : 
               mergedTransactions = currTransactions
           else : 
-              mergedTransactions = pd.concat([mergedTransactions,currTransactions])
+              mergedTransactions = pd.concat([mergedTransactions, currTransactions])
         disjointList.append([month, year, currTransactions])
     month += 1
     if month == 12: 
       month = 0
       year += 1
-  if not mergedTransactions.empty: 
+  if token and not mergedTransactions.empty: 
     mergedTransactions.to_csv("transactions.csv")
     with open("transactions.csv") as f:
       response = requests.post(settings.BANKING_MICROSERVICE + "add_transactions/", 
