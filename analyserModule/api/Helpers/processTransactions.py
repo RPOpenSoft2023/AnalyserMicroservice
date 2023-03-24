@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import re
 import json
 from ..models import monthWiseAnalytics
@@ -66,6 +67,43 @@ def processing(transactions, accountNumber, token=None):
             month = 0
             year += 1
     return disjointList
+  disjointList = []
+  month = getStartDate(transactions).get('month')
+  year = getStartDate(transactions).get('year')
+  endMonth = getEndDate(transactions).get('month')
+  endYear = getEndDate(transactions).get('year')
+  mergedTransactions = pd.DataFrame()
+  while(1) : 
+    if (year > endYear) or ((year == endYear) and (month > endMonth)): 
+      break
+    else : 
+      # check with backend if that exists, if it does't
+      if(len(monthWiseAnalytics.objects.filter(month = month, year=year, accountNumber=accountNumber).values())== 0):		
+        queriedTransactions = (transactions['month'] == month) & (transactions['year'] == year)
+
+        currTransactions = transactions[queriedTransactions]
+        
+        # update this to banking microservice, and process this only when it's successfully updated
+        if(token):  
+          if  mergedTransactions.empty : 
+              mergedTransactions = currTransactions
+          else : 
+              mergedTransactions = pd.concat([mergedTransactions, currTransactions])
+        disjointList.append([month, year, currTransactions])
+    month += 1
+    if month == 12: 
+      month = 0
+      year += 1
+  if token and not mergedTransactions.empty: 
+    mergedTransactions.to_csv("transactions.csv")
+    with open("transactions.csv") as f:
+      response = requests.post(settings.BANKING_MICROSERVICE + "add_transactions/", 
+                              data={"account_number": accountNumber}, 
+                              headers = { 'Authorization': token },
+                              files={"transactions": f})
+      print(response.json(), response.status_code)
+    os.remove("transactions.csv")
+  return disjointList
 
 
 def createSearchBase():
