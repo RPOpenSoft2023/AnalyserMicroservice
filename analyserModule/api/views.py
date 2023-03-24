@@ -54,7 +54,7 @@ def bank_account_init(request):
         accountNumber = request.data.get('account_number')
 
         if(token):
-            response = requests.get(getattr(settings, "USER_MICROSERVICE", None) + "verify_token",
+            response = requests.get(settings.USER_MICROSERVICE + "verify_token",
                                         headers = { 'Authorization': token }
                                     )
             if(response.status_code != 200):
