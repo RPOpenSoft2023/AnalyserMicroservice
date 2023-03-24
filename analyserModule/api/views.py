@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
 # from .Helpers import Sources, Loans, Info, PaymentStat
-from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear
+from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear, getCautions
 from .models import monthWiseAnalytics
 import pandas as pd
 from django.conf import settings
@@ -34,6 +34,13 @@ def bank_analysis(request):
         iterMonth, iterYear = startMonth, startYear
 
         analytics = []
+        taxCount = 0
+        taxFaults = []
+        rtgsCount = 0
+        rtgsFaults = []
+        atmCount = 0
+        atmFaults = []
+        equalDebitCredit = []
         while ((iterYear < endYear) or ((iterYear == endYear) and (iterMonth <= endMonth))):
             currData = monthWiseAnalytics.objects.filter(
                 accountNumber=accountNumber, month=iterMonth, year=iterYear).values()
@@ -46,8 +53,41 @@ def bank_analysis(request):
                 iterMonth = 0
             else:
                 iterMonth += 1
-        return Response({"analytics": analytics})
+            taxList = curr.get('taxedData')
+            rtgsList = curr.get('rtgsData')
+            atmList = curr.get('atmData')
+            creditDebitFreq = curr.get('creditDebitFrequency')
 
+            boolVal = (creditDebitFreq['creditFreq'] == creditDebitFreq['debitFreq']) or (
+                curr.get('totalMonthIncome') == curr.get('totalMonthExpense'))
+            if boolVal:
+                equalDebitCredit.append((iterMonth, iterYear))
+            for taxData in taxList:
+                if taxData['Debit'] % 10 == 0:
+                    taxCount += 1
+                    taxFaults.append(taxData)
+                    print(taxData)
+
+            for rtgsData in rtgsList:
+                if rtgsData['Debit'] <= 200000 or rtgsData['Credit'] <= 200000:
+                    rtgsCount += 1
+                    rtgsFaults.append(rtgsData)
+                    print(rtgsData)
+
+            for atmData in atmList:
+                if atmData['Debit'] >= 20000:
+                    atmCount += 1
+                    atmFaults.append(atmData)
+                    print(atmData)
+
+        Cautions = {
+            "taxFlag": (taxCount, taxFaults),
+            "rtgsFlag": (rtgsCount, rtgsFaults),
+            "atmFlag": (atmCount, atmFaults),
+            "equalDebitCreditFlag": (len(equalDebitCredit), equalDebitCredit)
+        }
+        # print(cautions)
+        return Response({"analytics": analytics, "Cautions": Cautions})
     except Exception as e:
         return Response({"Error": str(e)}, status=400)
 

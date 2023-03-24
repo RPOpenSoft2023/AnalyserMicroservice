@@ -276,3 +276,45 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
         "rtgsData": rtgsData,
         "atmData": atmData,
     }
+
+
+def getCautions(curr):
+    def getTaxFlag(curr):
+        taxFaults = []
+        taxList = curr.get('taxedData')
+        for taxData in taxList:
+            if taxData['Debit'] % 10 == 0:
+                taxFaults.append(taxData)
+        return taxFaults
+
+    def getRTGSFlag(curr):
+        rtgsFaults = []
+        rtgsList = curr.get('rtgsData')
+        for rtgsData in rtgsList:
+            if rtgsData['Debit'] <= 200000 or rtgsData['Credit'] <= 200000:
+                rtgsFaults.append(rtgsData)
+        return rtgsFaults
+
+    def getATMFlag(curr):
+        atmFaults = []
+        atmList = curr.get('atmData')
+        for atmData in atmList:
+            if atmList['Credit'] >= 20000:
+                atmFaults.append(atmData)
+        return atmFaults
+
+    # def getEqualCreditDebit(curr):
+    #     creditDebitFreq = curr.get('creditDebitFrequency')
+    #     boolVal = (creditDebitFreq['creditFreq'] == creditDebitFre['debitFreq']) or (
+    #         curr.get('totalMonthIncome') == curr.get('totalMonthExpense'))
+    #     if boolVal:
+    #         equalDebitCredit.append((iterMonth, iterYear))
+
+    taxFlag = getTaxFlag(curr)
+    rtgsFlag = getRTGSFlag(curr)
+    atmFlag = getATMFlag(curr)
+    return {
+        "taxFlag": taxFlag,
+        "rtgsFlag": rtgsFlag,
+        "atmFlag": atmFlag,
+    }
