@@ -49,14 +49,16 @@ def processing(transactions, accountNumber, token=None):
                     transactions['year'] == year)
 
                 # update this to banking microservice, and process this only when it's successfully updated
+
                 if (token):
                     currTransactions = transactions[queriedTransactions]
                     currTransactions.to_csv("transactions.csv")
-                    response = requests.post(settings.BANKING_MICROSERVICE + "/add_transactions",
+                    response = requests.post(getattr(settings, "BANKING_MICROSERVICE", None) + "add_transactions",
                                              data={
                                                  "account_number": accountNumber},
                                              headers={'Authorization': token},
                                              files={"transactions": "transactions.csv"})
+                    print(response)
                     os.remove("transactions.csv")
                 disjointList.append([month, year, currTransactions])
         month += 1
@@ -209,17 +211,26 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
             sectorsData[sector] = sectorData
         return sectorsData
     # get taxed data
-    keyWords = ['gst', 'tax']
+    keyWords = ['gst', 'tax', 'tds']
 
     def getTaxedData(monthWiseTransactions):
         taxedTransactions = []
         for ind in monthWiseTransactions.index:
-            tax = (keyWords[0] in monthWiseTransactions['Particulars'][ind]) or (
-                keyWords[1] in monthWiseTransactions['Particulars'][ind])
+            tax = False
+            for key in keyWords:
+                tax = tax or (key in monthWiseTransactions['Particular'][ind])
             if (tax):
                 taxedTransactions.append(
                     monthWiseTransactions.iloc[ind].to_dict())
         return taxedTransactions
+
+    def getRTGSData(monthWiseTransactions):
+        rtgsTransactions = []
+        for ind in monthWiseTransactions.index:
+            if ('rtgs' in monthWiseTransactions['Particular'][ind]):
+                rtgsTransactions.append(
+                    monthWiseTransactions.iloc[ind].to_dict())
+        return rtgsTransactions
 
     monthWiseTransactions = preProcessingMonthWise(
         monthWiseTransactions, searchBase)
@@ -232,7 +243,10 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
     totalMonthExpense = getTotalMonthExpense(monthWiseTransactions)
     spendingExpenseRatio = getSpendingExpenseRatio(monthWiseTransactions)
     categorizedData = getCategorizedData(monthWiseTransactions)
-    # taxedData = getTaxedData(monthWiseTransactions)
+    taxedData = getTaxedData(monthWiseTransactions)
+    rtgsData = getRTGSData(monthWiseTransactions)
+    print(taxedData)
+    print(rtgsData)
     return {
         "month": month,
         "year": year,
@@ -245,11 +259,6 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
         "totalMonthExpense": totalMonthExpense,
         "spendingExpenseRatio": spendingExpenseRatio,
         "categorizedData": categorizedData,
-        # "taxedData": taxedData,
+        "taxedData": taxedData,
+        "rtgsData": rtgsData,
     }
-
-
-def updateParticular(particular):
-    particular = (re.split(r"[-/;,.\s]", particular))
-    particular = "".join(particular)
-    return particular.lower()
