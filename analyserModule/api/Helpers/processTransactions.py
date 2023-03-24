@@ -15,6 +15,7 @@ def preprocessing(transactions):
     transactions = transactions.replace(np.nan, 0)  # replacing NaN with 0.0
     requiredColumnslist = ['Date', 'Particulars', 'Debit',
                            'Credit', 'Balance']  # Columns list we need
+    transactions = transactions[requiredColumnslist]
     return transactions
 
 
@@ -236,6 +237,13 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
                 rtgsTransactions.append(row[1].to_dict())
         return rtgsTransactions
 
+    def getATMData(monthWiseTransactions):
+        atmData = []
+        for row in monthWiseTransactions.iterrows():
+            if ('atm' in row[1].Particulars and 'cash' in row[1].Particulars):
+                atmData.append(row[1].to_dict())
+        return atmData
+
     monthWiseTransactions = preProcessingMonthWise(
         monthWiseTransactions, searchBase)
     loanDetails = getLoanDetails(monthWiseTransactions)
@@ -249,6 +257,7 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
     categorizedData = getCategorizedData(monthWiseTransactions)
     taxedData = getTaxedData(monthWiseTransactions)
     rtgsData = getRTGSData(monthWiseTransactions)
+    atmData = getATMData(monthWiseTransactions)
     # print(taxedData)
     # print(rtgsData)
     return {
@@ -265,4 +274,5 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
         "categorizedData": categorizedData,
         "taxedData": taxedData,
         "rtgsData": rtgsData,
+        "atmData": atmData,
     }

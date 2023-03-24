@@ -18,4 +18,4 @@ class monthWiseAnalytics(models.Model):
     categorizedData = models.JSONField()
     taxedData = models.JSONField()
     rtgsData = models.JSONField()
-    # atmData=models.JSONField()
+    atmData = models.JSONField()
