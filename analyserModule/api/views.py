@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
 # from .Helpers import Sources, Loans, Info, PaymentStat
-from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear, getCautions
+from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear, getTaxCaution, getRTGSCaution, getATMFCaution, getEqualDebitCredit, getNegativeBalanceCaution, getHolidayChequeList
 from .models import monthWiseAnalytics
 import pandas as pd
 from django.conf import settings
@@ -15,10 +15,6 @@ import requests
 @api_view(['GET'])
 def bank_analysis(request):
     try:
-        data = request.data
-        print(data)
-        startMonth, startYear, endMonth, endYear = map(
-            int, [data['start_month'], data['start_year'], data['end_month'], data['end_year']])
         data = request.data
         startMonth, startYear, endMonth, endYear = map(
             int, [data['start_month'], data['start_year'], data['end_month'], data['end_year']])
@@ -34,13 +30,12 @@ def bank_analysis(request):
         iterMonth, iterYear = startMonth, startYear
 
         analytics = []
-        taxCount = 0
         taxFaults = []
-        rtgsCount = 0
         rtgsFaults = []
-        atmCount = 0
         atmFaults = []
+        negativeComputedBalance = []
         equalDebitCredit = []
+        chequeInHolidayCaution = []
         while ((iterYear < endYear) or ((iterYear == endYear) and (iterMonth <= endMonth))):
             currData = monthWiseAnalytics.objects.filter(
                 accountNumber=accountNumber, month=iterMonth, year=iterYear).values()
@@ -53,38 +48,25 @@ def bank_analysis(request):
                 iterMonth = 0
             else:
                 iterMonth += 1
-            taxList = curr.get('taxedData')
-            rtgsList = curr.get('rtgsData')
-            atmList = curr.get('atmData')
-            creditDebitFreq = curr.get('creditDebitFrequency')
 
-            boolVal = (creditDebitFreq['creditFreq'] == creditDebitFreq['debitFreq']) or (
-                curr.get('totalMonthIncome') == curr.get('totalMonthExpense'))
-            if boolVal:
-                equalDebitCredit.append((iterMonth, iterYear))
-            for taxData in taxList:
-                if taxData['Debit'] % 10 == 0:
-                    taxCount += 1
-                    taxFaults.append(taxData)
-                    print(taxData)
+            isEqualDebitCredit = getEqualDebitCredit(curr)
+            if (isEqualDebitCredit[0]):
+                equalDebitCredit.append(
+                    (isEqualDebitCredit[1], isEqualDebitCredit[2]))
 
-            for rtgsData in rtgsList:
-                if rtgsData['Debit'] <= 200000 or rtgsData['Credit'] <= 200000:
-                    rtgsCount += 1
-                    rtgsFaults.append(rtgsData)
-                    print(rtgsData)
-
-            for atmData in atmList:
-                if atmData['Debit'] >= 20000:
-                    atmCount += 1
-                    atmFaults.append(atmData)
-                    print(atmData)
+            taxFaults += getTaxCaution(curr)
+            rtgsFaults += getRTGSCaution(curr)
+            atmFaults += getATMFCaution(curr)
+            negativeComputedBalance += getNegativeBalanceCaution(curr)
+            chequeInHolidayCaution += getHolidayChequeList(curr)
 
         Cautions = {
-            "taxFlag": (taxCount, taxFaults),
-            "rtgsFlag": (rtgsCount, rtgsFaults),
-            "atmFlag": (atmCount, atmFaults),
-            "equalDebitCreditFlag": (len(equalDebitCredit), equalDebitCredit)
+            "taxFlag": (len(taxFaults), taxFaults),
+            "rtgsFlag": (len(rtgsFaults), rtgsFaults),
+            "atmFlag": (len(atmFaults), atmFaults),
+            "negativeComputedBalance": (len(negativeComputedBalance), negativeComputedBalance),
+            "equalDebitCreditFlag": (len(equalDebitCredit), equalDebitCredit),
+            "chequeInHolidayCaution": (len(chequeInHolidayCaution), chequeInHolidayCaution),
         }
         # print(cautions)
         return Response({"analytics": analytics, "Cautions": Cautions})

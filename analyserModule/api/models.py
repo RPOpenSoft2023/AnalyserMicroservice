@@ -16,6 +16,4 @@ class monthWiseAnalytics(models.Model):
     totalMonthExpense = models.BigIntegerField()
     spendingExpenseRatio = models.DecimalField(decimal_places=2, max_digits=10)
     categorizedData = models.JSONField()
-    taxedData = models.JSONField()
-    rtgsData = models.JSONField()
-    atmData = models.JSONField()
+    storedCautionData = models.JSONField()

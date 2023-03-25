@@ -6,6 +6,8 @@ from ..models import monthWiseAnalytics
 import requests
 from django.conf import settings
 import os
+import holidays
+import datetime
 
 
 def preprocessing(transactions):
@@ -220,6 +222,7 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
     # get taxed data
     keyWords = ['gst', 'tax', 'tds']
 
+    # to get taxed data
     def getTaxedData(monthWiseTransactions):
         taxedTransactions = []
         for row in monthWiseTransactions.iterrows():
@@ -230,6 +233,7 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
                 taxedTransactions.append(row[1].to_dict())
         return taxedTransactions
 
+    # to rtgs data
     def getRTGSData(monthWiseTransactions):
         rtgsTransactions = []
         for row in monthWiseTransactions.iterrows():
@@ -237,12 +241,45 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
                 rtgsTransactions.append(row[1].to_dict())
         return rtgsTransactions
 
+    # to get atm data
     def getATMData(monthWiseTransactions):
         atmData = []
         for row in monthWiseTransactions.iterrows():
             if ('atm' in row[1].Particulars and 'cash' in row[1].Particulars):
                 atmData.append(row[1].to_dict())
         return atmData
+
+    # getting the cash data
+    def getCashData(monthWiseTransactions):
+        cashData = []
+        for row in monthWiseTransactions.iterrows():
+            if ('cash' in row[1].Particulars):
+                cashData.append(row[1].to_dict())
+        return cashData
+
+    def getDateTimeFormat(dateString):
+        dateList = dateString.split('-')
+        return datetime.date(int(dateList[0]), int(dateList[1]), int(dateList[2]))
+
+    # to get holiday data
+
+    def getHolidayData(monthWiseTransactions):
+        holidayTransactionData = []
+        for val in monthWiseTransactions.iterrows():
+            holidayIndia = holidays.India(val[1].year)
+            holidayList = list(holidayIndia.keys())
+            if getDateTimeFormat(val[1].Date) in holidayList:
+                holidayName = (holidayIndia[val[1].Date])
+                holidayTransactionData.append((holidayName, val[1].to_dict()))
+        return holidayTransactionData
+
+    # caution data for negative balance
+    def getNegativeBalanceTransactions(monthWiseTransactions):
+        negativeBalData = []
+        for val in monthWiseTransactions.iterrows():
+            if (val[1].Balance < 0):
+                negativeBalData.append(val[1].to_dict())
+        return negativeBalData
 
     monthWiseTransactions = preProcessingMonthWise(
         monthWiseTransactions, searchBase)
@@ -258,8 +295,19 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
     taxedData = getTaxedData(monthWiseTransactions)
     rtgsData = getRTGSData(monthWiseTransactions)
     atmData = getATMData(monthWiseTransactions)
+    holidayTransactionData = getHolidayData(monthWiseTransactions)
+    cashData = getCashData(monthWiseTransactions)
+    negativeBalanceData = getNegativeBalanceTransactions(monthWiseTransactions)
     # print(taxedData)
     # print(rtgsData)
+    storedCautionData = {
+        "taxedData": taxedData,
+        "rtgsData": rtgsData,
+        "atmData": atmData,
+        "cashData": cashData,
+        "holidayTransactionData": holidayTransactionData,
+        "negativeBalanceData": (len(negativeBalanceData), negativeBalanceData),
+    }
     return {
         "month": month,
         "year": year,
@@ -272,49 +320,71 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
         "totalMonthExpense": totalMonthExpense,
         "spendingExpenseRatio": spendingExpenseRatio,
         "categorizedData": categorizedData,
-        "taxedData": taxedData,
-        "rtgsData": rtgsData,
-        "atmData": atmData,
+        "storedCautionData": storedCautionData
     }
 
 
-def getCautions(curr):
-    def getTaxFlag(curr):
-        taxFaults = []
-        taxList = curr.get('taxedData')
-        for taxData in taxList:
-            if taxData['Debit'] % 10 == 0:
-                taxFaults.append(taxData)
-        return taxFaults
+def getTaxCaution(curr):
+    taxFault = []
+    cautionList = curr.get('storedCautionData')
+    taxList = cautionList['taxedData']
+    for taxData in taxList:
+        if taxData['Debit'] % 10 == 0:
+            taxFault.append(taxData)
+    return taxFault
 
-    def getRTGSFlag(curr):
-        rtgsFaults = []
-        rtgsList = curr.get('rtgsData')
-        for rtgsData in rtgsList:
-            if rtgsData['Debit'] <= 200000 or rtgsData['Credit'] <= 200000:
-                rtgsFaults.append(rtgsData)
-        return rtgsFaults
 
-    def getATMFlag(curr):
-        atmFaults = []
-        atmList = curr.get('atmData')
-        for atmData in atmList:
-            if atmList['Credit'] >= 20000:
-                atmFaults.append(atmData)
-        return atmFaults
+def getRTGSCaution(curr):
+    rtgsFault = []
+    cautionList = curr.get('storedCautionData')
+    rtgsList = cautionList['rtgsData']
+    for rtgsData in rtgsList:
+        if rtgsData['Debit'] <= 200000 or rtgsData['Credit'] <= 200000:
+            rtgsFault.append(rtgsData)
+    return rtgsFault
 
-    # def getEqualCreditDebit(curr):
-    #     creditDebitFreq = curr.get('creditDebitFrequency')
-    #     boolVal = (creditDebitFreq['creditFreq'] == creditDebitFre['debitFreq']) or (
-    #         curr.get('totalMonthIncome') == curr.get('totalMonthExpense'))
-    #     if boolVal:
-    #         equalDebitCredit.append((iterMonth, iterYear))
 
-    taxFlag = getTaxFlag(curr)
-    rtgsFlag = getRTGSFlag(curr)
-    atmFlag = getATMFlag(curr)
-    return {
-        "taxFlag": taxFlag,
-        "rtgsFlag": rtgsFlag,
-        "atmFlag": atmFlag,
-    }
+def getATMFCaution(curr):
+    atmFault = []
+    cautionList = curr.get('storedCautionData')
+    atmList = cautionList['atmData']
+    for atmData in atmList:
+        if atmData['Debit'] >= 20000:
+            atmFault.append(atmData)
+    return atmFault
+
+
+def getEqualDebitCredit(curr):
+
+    creditDebitFreq = curr.get('creditDebitFrequency')
+    boolVal = (creditDebitFreq['creditFreq'] == creditDebitFreq['debitFreq']) or (
+        curr.get('totalMonthIncome') == curr.get('totalMonthExpense'))
+    month = curr.get('month')
+    year = curr.get('year')
+    return (boolVal, month, year)
+
+
+def getNegativeBalanceCaution(curr):
+    negBalList = []
+    cautionList = curr.get('storedCautionData')
+    negativeBalanceData = cautionList['negativeBalanceData']
+    for data in negativeBalanceData[1]:
+        negBalList.append(data)
+    return negBalList
+
+
+keyWord = ['cheque', 'clg']
+
+
+def getHolidayChequeList(curr):
+    chequeInHoliday = []
+    cautionList = curr.get('storedCautionData')
+    holidayTransactionData = cautionList['holidayTransactionData']
+    for data in holidayTransactionData:
+        boolVal = False
+        for key in keyWord:
+            boolVal = boolVal or key in data[1]['Particulars']
+        if boolVal:
+            print(data)
+            chequeInHoliday.append(data)
+    return chequeInHoliday
