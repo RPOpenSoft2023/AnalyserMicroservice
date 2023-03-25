@@ -76,7 +76,7 @@ def bank_account_init(request):
             currAnalDict = processingMonthWiseTransactions(monthWiseTransactions, val[0], val[1])
             currAnal = monthWiseAnalytics(**currAnalDict, accountNumber=accountNumber)
             currAnal.save()
-        return Response(status=200)
+        return Response({"message": "statement added successfully"}, status=200)
     except Exception as e:
         return Response({"Error": str(e)}, status=400)
     
@@ -123,7 +123,7 @@ def edit_transaction(request):
         # data = {"category": "shoppingAndFood"}
         # print(transaction['date'])
         date = transaction.date
-        analytics = monthWiseAnalytics.objects.filter(year=int(str(date).split('-')[0]), month = int(str(date).split('-')[1]) - 1, accountNumber=transaction.get('account_number'))[0]
+        analytics = monthWiseAnalytics.objects.filter(year=int(str(date).split('-')[0]), month = int(str(date).split('-')[1]) - 1, accountNumber=transaction.get('account'))[0]
         categorizedData = analytics.categorizedData
 
         # update transaction types count

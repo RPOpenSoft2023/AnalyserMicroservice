@@ -6,6 +6,7 @@ from ..models import monthWiseAnalytics
 import requests
 from django.conf import settings
 import os
+from rest_framework.exceptions import ValidationError
 
 searchBase = list()
 
@@ -64,7 +65,7 @@ def processing(transactions, accountNumber, token=None):
                             data={"account_number": accountNumber}, 
                             headers = { 'Authorization': token },
                             files={"transactions": f})
-    print(response.json(), response.status_code)
+    assert(response.status_code != 200)
   os.remove("transactions.csv")
   return disjointList
 
