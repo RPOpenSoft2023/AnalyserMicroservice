@@ -72,7 +72,7 @@ def processing(transactions, accountNumber, token=None):
                                      data={"account_number": accountNumber},
                                      headers={'Authorization': token},
                                      files={"transactions": f})
-            print(response.json(), response.status_code)
+            # print(response.json(), response.status_code)
         os.remove("transactions.csv")
     return disjointList
 
@@ -126,7 +126,7 @@ def preProcessingMonthWise(monthWiseTransactions, searchBase):
     return monthWiseTransactions
 
 
-def processingMonthWiseTransactions(monthWiseTransactions, month, year):
+def processingMonthWiseTransactions(monthWiseTransactions, month, year, updatedBalance=0):
 
     searchBase = createSearchBase()
 
@@ -281,6 +281,23 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
                 negativeBalData.append(val[1].to_dict())
         return negativeBalData
 
+    def computedBalanceErrors(monthWiseTransactions, updatedBalance):
+        falseBalance = []
+
+        for row in monthWiseTransactions.iterrows():
+            if updatedBalance != 0:
+                prevBalance = updatedBalance
+            # print(row[0])
+            # print(monthWiseTransactions.head(1).index[0])
+
+            if row[0] != int(monthWiseTransactions.head(1).index[0]):
+                updatedBalance = prevBalance-row[1].Debit+row[1].Credit
+                if abs(updatedBalance-row[1].Balance) >= 0.01:
+                    falseBalance.append((updatedBalance, row[1].to_dict()))
+            else:
+                updatedBalance = row[1].Balance
+        return (updatedBalance, falseBalance)
+
     monthWiseTransactions = preProcessingMonthWise(
         monthWiseTransactions, searchBase)
     loanDetails = getLoanDetails(monthWiseTransactions)
@@ -298,6 +315,7 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
     holidayTransactionData = getHolidayData(monthWiseTransactions)
     cashData = getCashData(monthWiseTransactions)
     negativeBalanceData = getNegativeBalanceTransactions(monthWiseTransactions)
+    balanceError = computedBalanceErrors(monthWiseTransactions, updatedBalance)
     # print(taxedData)
     # print(rtgsData)
     storedCautionData = {
@@ -307,6 +325,8 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
         "cashData": cashData,
         "holidayTransactionData": holidayTransactionData,
         "negativeBalanceData": (len(negativeBalanceData), negativeBalanceData),
+        "computedBalanceErrorTransactions": (len(balanceError[1]), balanceError[1]),
+        "lastBalance": balanceError[0]
     }
     return {
         "month": month,
@@ -331,7 +351,7 @@ def getCashCaution(curr):
     dailyIncome = curr.get('averageDayWiseIncome')
     print(dailyIncome, type(dailyIncome))
     for cashData in cashList:
-        if cashData['Credit'] > 2*dailyIncome:
+        if cashData['Credit'] > 250000:
             cashFault.append(cashData)
     return cashFault
 
@@ -406,8 +426,16 @@ def getHighHolidayCredit(curr):
     creditList = []
     cautionList = curr.get('storedCautionData')
     holidayTransactionData = cautionList['holidayTransactionData']
-    dailyIncome = curr.get('averageDayWiseIncome')
     for data in holidayTransactionData:
-        if data[1]['Credit'] > 2*dailyIncome:
+        if data[1]['Credit'] > 250000:
             creditList.append(data)
     return creditList
+
+
+def getComputeBalanceError(curr):
+    errorList = []
+    cautionList = curr.get('storedCautionData')
+    balanceErrorData = cautionList['computedBalanceErrorTransactions']
+    for data in balanceErrorData[1]:
+        errorList.append(data)
+    return errorList

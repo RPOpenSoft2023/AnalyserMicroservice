@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
 # from .Helpers import Sources, Loans, Info, PaymentStat
-from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear, getTaxCaution, getRTGSCaution, getATMFCaution, getEqualDebitCredit, getNegativeBalanceCaution, getHolidayChequeList, getCashCaution, getHighHolidayCredit
+from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear, getTaxCaution, getRTGSCaution, getATMFCaution, getEqualDebitCredit, getNegativeBalanceCaution, getHolidayChequeList, getCashCaution, getHighHolidayCredit, getComputeBalanceError
 from .models import monthWiseAnalytics
 import pandas as pd
 from django.conf import settings
@@ -38,6 +38,7 @@ def bank_analysis(request):
         equalDebitCredit = []
         chequeInHolidayCaution = []
         highHolidayCredit = []
+        computedBalanceError = []
         while ((iterYear < endYear) or ((iterYear == endYear) and (iterMonth <= endMonth))):
             currData = monthWiseAnalytics.objects.filter(
                 accountNumber=accountNumber, month=iterMonth, year=iterYear).values()
@@ -63,6 +64,7 @@ def bank_analysis(request):
             negativeComputedBalance += getNegativeBalanceCaution(curr)
             chequeInHolidayCaution += getHolidayChequeList(curr)
             highHolidayCredit += getHighHolidayCredit(curr)
+            computedBalanceError += getComputeBalanceError(curr)
 
         Cautions = {
             "taxFlag": (len(taxFaults), taxFaults),
@@ -71,8 +73,9 @@ def bank_analysis(request):
             "negativeComputedBalanceFlag": (len(negativeComputedBalance), negativeComputedBalance),
             "equalDebitCreditFlag": (len(equalDebitCredit), equalDebitCredit),
             "chequeInHolidayFlag": (len(chequeInHolidayCaution), chequeInHolidayCaution),
-            "higCashDebitFlag": (len(cashFaults), cashFaults),
-            "highHolidayCredit": (len(highHolidayCredit), highHolidayCredit)
+            "highCashCreditFlag": (len(cashFaults), cashFaults),
+            "highHolidayCredit": (len(highHolidayCredit), highHolidayCredit),
+            "computedBalanceError": (len(computedBalanceError), computedBalanceError)
         }
         # print(cautions)
         return Response({"analytics": analytics, "Cautions": Cautions})
@@ -100,10 +103,13 @@ def bank_account_init(request):
         transactions = preprocessing(transactions)
         transactions['month'] = transactions['Date'].apply(getMonth)
         transactions['year'] = transactions['Date'].apply(getYear)
+        lastBalance = 0
         for val in processing(transactions, accountNumber, token):
             monthWiseTransactions = val[2]
             currAnalDict = processingMonthWiseTransactions(
-                monthWiseTransactions, val[0], val[1])
+                monthWiseTransactions, val[0], val[1], lastBalance)
+            cautionData = currAnalDict['storedCautionData']
+            lastBalance = cautionData['lastBalance']
             currAnal = monthWiseAnalytics(
                 **currAnalDict, accountNumber=accountNumber)
             currAnal.save()
@@ -123,12 +129,49 @@ def bank_statement_analyse(request):
         transactions['year'] = transactions['Date'].apply(getYear)
         transactions = transactions.reset_index()
         accountNumber = -1
+        lastBalance = 0
         analytics = []
+        taxFaults = []
+        rtgsFaults = []
+        atmFaults = []
+        cashFaults = []
+        negativeComputedBalance = []
+        equalDebitCredit = []
+        chequeInHolidayCaution = []
+        highHolidayCredit = []
+        computedBalanceError = []
         for val in processing(transactions, accountNumber):
             monthWiseTransactions = val[2]
             currAnalDict = processingMonthWiseTransactions(
-                monthWiseTransactions, val[0], val[1])
+                monthWiseTransactions, val[0], val[1], lastBalance)
+            cautionData = currAnalDict['storedCautionData']
+            lastBalance = cautionData['lastBalance']
             analytics.append(currAnalDict)
-        return Response({"analytics": analytics}, status=200)
+            isEqualDebitCredit = getEqualDebitCredit(currAnalDict)
+            if (isEqualDebitCredit[0]):
+                equalDebitCredit.append(
+                    (isEqualDebitCredit[1], isEqualDebitCredit[2]))
+
+            taxFaults += getTaxCaution(currAnalDict)
+            rtgsFaults += getRTGSCaution(currAnalDict)
+            atmFaults += getATMFCaution(currAnalDict)
+            cashFaults += getCashCaution(currAnalDict)
+            negativeComputedBalance += getNegativeBalanceCaution(currAnalDict)
+            chequeInHolidayCaution += getHolidayChequeList(currAnalDict)
+            highHolidayCredit += getHighHolidayCredit(currAnalDict)
+            computedBalanceError += getComputeBalanceError(currAnalDict)
+
+        Cautions = {
+            "taxFlag": (len(taxFaults), taxFaults),
+            "rtgsFlag": (len(rtgsFaults), rtgsFaults),
+            "atmFlag": (len(atmFaults), atmFaults),
+            "negativeComputedBalanceFlag": (len(negativeComputedBalance), negativeComputedBalance),
+            "equalDebitCreditFlag": (len(equalDebitCredit), equalDebitCredit),
+            "chequeInHolidayFlag": (len(chequeInHolidayCaution), chequeInHolidayCaution),
+            "highCashCreditFlag": (len(cashFaults), cashFaults),
+            "highHolidayCredit": (len(highHolidayCredit), highHolidayCredit),
+            "computedBalanceError": (len(computedBalanceError), computedBalanceError)
+        }
+        return Response({"analytics": analytics, "Cautions": Cautions}, status=200)
     except Exception as e:
         return Response({"Error": str(e)}, status=400)
