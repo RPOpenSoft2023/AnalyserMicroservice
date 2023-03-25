@@ -116,7 +116,7 @@ def edit_transaction(request):
         response = requests.post(settings.BANKING_MICROSERVICE + "get_transaction/",
                                 data={'transaction_id': data['transaction_id']},
                                 headers = { 'Authorization': token })
-        if response.ok:
+        if not response.ok:
             raise ValidationError(response.json())
         transaction = response.json()
         # transaction = {"id": 12323, "date": "2020-01-01", "category": "travelling", "credit": 12, "debit": 0, "account_number": 123}
@@ -157,7 +157,7 @@ def edit_transaction(request):
                                         'note': request.data.get('note',None),
                                     },
                                 headers = { 'Authorization': token })
-        if response.ok:
+        if not response.ok:
             raise ValidationError(response.json())
 
         analytics.categorizedData = categorizedData
