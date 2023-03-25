@@ -119,32 +119,51 @@ def edit_transaction(request):
         if response.ok:
             raise ValidationError(response.json())
         transaction = response.json()
-
-        response = requests.post(settings.BANKING_MICROSERVICE + "edit_transaction/",
-                                data={
-                                        'transaction_id': data['transaction_id'],
-                                        'category': data['new_category'],
-                                        'note': request.data.get('note',None),
-                                    },
-                                headers = { 'Authorization': token })
-        if response.ok:
-            raise ValidationError(response.json())
-
+        # transaction = {"id": 12323, "date": "2020-01-01", "category": "travelling", "credit": 12, "debit": 0, "account_number": 123}
+        # data = {"category": "shoppingAndFood"}
+        # print(transaction['date'])
         date = transaction.date
-        analytics = monthWiseAnalytics.objects.filter(year=int(str(date).split('-')[0])).filter(month = int(str(date).split('-')[1]))
+        analytics = monthWiseAnalytics.objects.filter(year=int(str(date).split('-')[0]), month = int(str(date).split('-')[1]) - 1, accountNumber=transaction.get('account_number'))[0]
         categorizedData = analytics.categorizedData
 
         # update transaction types count
         old_category = transaction.category
-        # TODO: Code Below, get_type -- get the type of transaction (UPI | Cheque | ... )
         # categorizedData[old_category]['transaction_types'][get_type(transaction['description'])] -=1
         # categorizedData[data['category']]['transaction_types'][get_type(transaction['category'])] +=1
+        keywords = ['upi', 'cheque', 'neft', 'rdgs']
+        typeDict = {}
+        present = 0
+        for val in keywords:
+            curr = val in transaction.description
+            typeDict[val] = 1 if curr else 0
+            present = present | curr
+        typeDict["others"] = present ^ 1
+
+        for val in typeDict:
+            categorizedData[old_category]['transactionTypes'][val] -= typeDict[val]
+        for val in typeDict:
+            categorizedData[data['category']]['transactionTypes'][val] += typeDict[val]
 
         # category totals
         categorizedData[old_category]['totalSectorMonthIncome'] -= transaction['credit']
         categorizedData[data['category']]['totalSectorMonthIncome'] += transaction['credit']
         categorizedData[old_category]['totalSectorMonthExpense'] -= transaction['debit']
         categorizedData[data['category']]['totalSectorMonthExpense'] += transaction['debit']
+
+        response = requests.post(settings.BANKING_MICROSERVICE + "edit_transaction/",
+                                data={
+                                        'transaction_id': data['transaction_id'],
+                                        'category': data['category'],
+                                        'note': request.data.get('note',None),
+                                    },
+                                headers = { 'Authorization': token })
+        if response.ok:
+            raise ValidationError(response.json())
+
+        analytics.categorizedData = categorizedData
+        analytics.save()
+
+        return Response({"message": "transaction updated"})
 
     except Exception as e:
         return Response({"Error": str(e)}, status=400)
