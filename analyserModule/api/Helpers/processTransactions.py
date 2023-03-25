@@ -324,6 +324,18 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
     }
 
 
+def getCashCaution(curr):
+    cashFault = []
+    cautionList = curr.get('storedCautionData')
+    cashList = cautionList['cashData']
+    dailyIncome = curr.get('averageDayWiseIncome')
+    print(dailyIncome, type(dailyIncome))
+    for cashData in cashList:
+        if cashData['Credit'] > 2*dailyIncome:
+            cashFault.append(cashData)
+    return cashFault
+
+
 def getTaxCaution(curr):
     taxFault = []
     cautionList = curr.get('storedCautionData')
@@ -388,3 +400,14 @@ def getHolidayChequeList(curr):
             print(data)
             chequeInHoliday.append(data)
     return chequeInHoliday
+
+
+def getHighHolidayCredit(curr):
+    creditList = []
+    cautionList = curr.get('storedCautionData')
+    holidayTransactionData = cautionList['holidayTransactionData']
+    dailyIncome = curr.get('averageDayWiseIncome')
+    for data in holidayTransactionData:
+        if data[1]['Credit'] > 2*dailyIncome:
+            creditList.append(data)
+    return creditList

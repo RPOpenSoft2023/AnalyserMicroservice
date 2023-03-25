@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
 # from .Helpers import Sources, Loans, Info, PaymentStat
-from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear, getTaxCaution, getRTGSCaution, getATMFCaution, getEqualDebitCredit, getNegativeBalanceCaution, getHolidayChequeList
+from .Helpers.processTransactions import preprocessing, processing, processingMonthWiseTransactions, getMonth, getYear, getTaxCaution, getRTGSCaution, getATMFCaution, getEqualDebitCredit, getNegativeBalanceCaution, getHolidayChequeList, getCashCaution, getHighHolidayCredit
 from .models import monthWiseAnalytics
 import pandas as pd
 from django.conf import settings
@@ -33,9 +33,11 @@ def bank_analysis(request):
         taxFaults = []
         rtgsFaults = []
         atmFaults = []
+        cashFaults = []
         negativeComputedBalance = []
         equalDebitCredit = []
         chequeInHolidayCaution = []
+        highHolidayCredit = []
         while ((iterYear < endYear) or ((iterYear == endYear) and (iterMonth <= endMonth))):
             currData = monthWiseAnalytics.objects.filter(
                 accountNumber=accountNumber, month=iterMonth, year=iterYear).values()
@@ -57,16 +59,20 @@ def bank_analysis(request):
             taxFaults += getTaxCaution(curr)
             rtgsFaults += getRTGSCaution(curr)
             atmFaults += getATMFCaution(curr)
+            cashFaults += getCashCaution(curr)
             negativeComputedBalance += getNegativeBalanceCaution(curr)
             chequeInHolidayCaution += getHolidayChequeList(curr)
+            highHolidayCredit += getHighHolidayCredit(curr)
 
         Cautions = {
             "taxFlag": (len(taxFaults), taxFaults),
             "rtgsFlag": (len(rtgsFaults), rtgsFaults),
             "atmFlag": (len(atmFaults), atmFaults),
-            "negativeComputedBalance": (len(negativeComputedBalance), negativeComputedBalance),
+            "negativeComputedBalanceFlag": (len(negativeComputedBalance), negativeComputedBalance),
             "equalDebitCreditFlag": (len(equalDebitCredit), equalDebitCredit),
-            "chequeInHolidayCaution": (len(chequeInHolidayCaution), chequeInHolidayCaution),
+            "chequeInHolidayFlag": (len(chequeInHolidayCaution), chequeInHolidayCaution),
+            "higCashDebitFlag": (len(cashFaults), cashFaults),
+            "highHolidayCredit": (len(highHolidayCredit), highHolidayCredit)
         }
         # print(cautions)
         return Response({"analytics": analytics, "Cautions": Cautions})
