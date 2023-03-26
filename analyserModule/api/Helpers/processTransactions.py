@@ -191,8 +191,8 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year):
       sectorsData[sector] = sectorData
     return sectorsData
   
-  # monthWiseTransactions = preProcessingMonthWise(monthWiseTransactions, searchBase)
   searchBase = createSearchBase()
+  monthWiseTransactions = preProcessingMonthWise(monthWiseTransactions)
   loanDetails = getLoanDetails(monthWiseTransactions)
   transactionTypes = getTransactionTypes(monthWiseTransactions) 
   averageDayWiseExpense = getAverageDayWiseExpense(monthWiseTransactions)
