@@ -12,9 +12,9 @@ import datetime
 searchBase = list()
 
 
-def convertToInteger(x):
-  x = "".join(re.split(r"[-/;,.\s]", str(x)))
-  return int(x)
+def removeDelimeterFromAmount(x):
+  x = "".join(re.split(r"[-/;,\s]", str(x)))
+  return float(x)
 
 
 
@@ -88,8 +88,7 @@ def processing(transactions, accountNumber, token=None):
                                  headers={'Authorization': token},
                                  files={"transactions": f})
         # print(response.json(), response.status_code)
-        assert (response.status_code == 200,
-                "Unable to save the transaction data")
+        assert response.status_code == 200, "Unable to save the transaction data"
     os.remove("transactions.csv")
     return disjointList
 
@@ -321,8 +320,8 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year, updatedB
 
     monthWiseTransactions = preProcessingMonthWise(
         monthWiseTransactions, searchBase)
-    monthWiseTransactions['Credit'] = monthWiseTransactions['Credit'].apply(convertToInteger)
-    monthWiseTransactions['Debit'] = monthWiseTransactions['Debit'].apply(convertToInteger)
+    monthWiseTransactions['Credit'] = monthWiseTransactions['Credit'].apply(removeDelimeterFromAmount)
+    monthWiseTransactions['Debit'] = monthWiseTransactions['Debit'].apply(removeDelimeterFromAmount)
     loanDetails = getLoanDetails(monthWiseTransactions)
     transactionTypes = getTransactionTypes(monthWiseTransactions)
     averageDayWiseExpense = getAverageDayWiseExpense(monthWiseTransactions)
