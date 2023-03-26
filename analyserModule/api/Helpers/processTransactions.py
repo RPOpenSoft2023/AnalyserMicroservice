@@ -58,8 +58,12 @@ def processing(transactions, accountNumber, token=None):
                 # update this to banking microservice, and process this only when it's successfully updated
                 if (token):
                     if mergedTransactions.empty:
+                        currTransactions = preProcessingMonthWise(
+                            currTransactions)
                         mergedTransactions = currTransactions
                     else:
+                        currTransactions = preProcessingMonthWise(
+                            currTransactions)
                         mergedTransactions = pd.concat(
                             [mergedTransactions, currTransactions])
                 disjointList.append([month, year, currTransactions])
