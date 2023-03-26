@@ -12,6 +12,12 @@ import datetime
 searchBase = list()
 
 
+def convertToInteger(x):
+  x = "".join(re.split(r"[-/;,.\s]", str(x)))
+  return int(x)
+
+
+
 def preprocessing(transactions):
     # removing rows with date as empty cell
     transactions = transactions.dropna(
@@ -315,6 +321,8 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year, updatedB
 
     monthWiseTransactions = preProcessingMonthWise(
         monthWiseTransactions, searchBase)
+    monthWiseTransactions['Credit'] = monthWiseTransactions['Credit'].apply(convertToInteger)
+    monthWiseTransactions['Debit'] = monthWiseTransactions['Debit'].apply(convertToInteger)
     loanDetails = getLoanDetails(monthWiseTransactions)
     transactionTypes = getTransactionTypes(monthWiseTransactions)
     averageDayWiseExpense = getAverageDayWiseExpense(monthWiseTransactions)
