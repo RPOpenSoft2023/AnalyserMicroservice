@@ -94,14 +94,14 @@ WSGI_APPLICATION = 'analyserModule.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-        # 'ENGINE': 'django.db.backends.postgresql',
-        # 'NAME': os.getenv('DATABASE_NAME'),
-        # 'USER': os.getenv('DATABASE_USER'),
-        # 'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-        # 'HOST': '127.0.0.1',
-        # 'PORT': '5432',
+        # 'ENGINE': 'django.db.backends.sqlite3',
+        # 'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DATABASE_NAME'),
+        'USER': os.getenv('DATABASE_USER'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
     }
 }
 
@@ -149,3 +149,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 USER_MICROSERVICE = 'http://34.105.83.175:80/user/api/'
 BANKING_MICROSERVICE = 'http://34.82.249.105:80/banking/api/'
+
