@@ -36,8 +36,12 @@ def getEndDate(transactions):
     date['year'] = transactions['year'].iloc[-1]
     return date
 
+# searchBase=createSearchBase()
+
 
 def processing(transactions, accountNumber, token=None):
+    searchBase = createSearchBase()
+    # print(searchBase)
     disjointList = []
     month = getStartDate(transactions).get('month')
     year = getStartDate(transactions).get('year')
@@ -59,11 +63,11 @@ def processing(transactions, accountNumber, token=None):
                 if (token):
                     if mergedTransactions.empty:
                         currTransactions = preProcessingMonthWise(
-                            currTransactions)
+                            currTransactions, searchBase)
                         mergedTransactions = currTransactions
                     else:
                         currTransactions = preProcessingMonthWise(
-                            currTransactions)
+                            currTransactions, searchBase)
                         mergedTransactions = pd.concat(
                             [mergedTransactions, currTransactions])
                 disjointList.append([month, year, currTransactions])
@@ -108,6 +112,7 @@ def getYear(date):
 
 
 def preProcessingMonthWise(monthWiseTransactions, searchBase):
+    searchBase = createSearchBase()
 
     def updateParticular(particular):
         particular = (re.split(r"[-/;,.\s]", particular))
@@ -116,6 +121,8 @@ def preProcessingMonthWise(monthWiseTransactions, searchBase):
 
     # function to search sector from a function
     def searchingSector(particular):
+        print(searchBase)
+        print(type(searchBase), len(searchBase))
         sectorsList = searchBase[0]
         sectorWiseCompanies = searchBase[1]
         # preprocessing of data will be on top
@@ -135,8 +142,6 @@ def preProcessingMonthWise(monthWiseTransactions, searchBase):
 
 
 def processingMonthWiseTransactions(monthWiseTransactions, month, year, updatedBalance=0):
-
-    searchBase = createSearchBase()
 
     def getTransactionTypes(monthWiseTransactions):
         dlen = len(monthWiseTransactions)
@@ -209,10 +214,12 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year, updatedB
             return "No expense in the month"
 
     def getCategorizedData(monthWiseTransactions):
+        searchBase = createSearchBase()
+        # print(len(searchBase))
         sectorsList = searchBase[0]
         sectorsData = dict()
         for sector in sectorsList:
-            queriedSectorWiseTransactions = monthWiseTransactions['Sector'] == sector
+            queriedSectorWiseTransactions = monthWiseTransactions['Category'] == sector
             sectorWiseMonthTransactions = monthWiseTransactions[queriedSectorWiseTransactions]
             transactionTypes = getTransactionTypes(sectorWiseMonthTransactions)
             totalSectorMonthIncome = getTotalMonthIncome(
@@ -413,10 +420,8 @@ def getNegativeBalanceCaution(curr):
     return negBalList
 
 
-keyWord = ['cheque', 'clg']
-
-
 def getHolidayChequeList(curr):
+    keyWord = ['cheque', 'clg']
     chequeInHoliday = []
     cautionList = curr.get('storedCautionData')
     holidayTransactionData = cautionList['holidayTransactionData']
