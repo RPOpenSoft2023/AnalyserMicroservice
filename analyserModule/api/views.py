@@ -183,7 +183,7 @@ def bank_statement_analyse(request):
         return Response({"Error": str(e)}, status=400)
 
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def edit_transaction(request):
     try:
         token = request.headers.get('Authorization')
@@ -195,10 +195,10 @@ def edit_transaction(request):
             else:
                 data[field] = request.data.get(field)
 
-        response = requests.post(settings.BANKING_MICROSERVICE + "get_transaction/",
-                                 data={
-                                     'transaction_id': data['transaction_id']},
-                                 headers={'Authorization': token})
+        response = requests.get(settings.BANKING_MICROSERVICE + "get_transaction/",
+                                data={
+                                    'transaction_id': data['transaction_id']},
+                                headers={'Authorization': token})
         if not response.ok:
             raise ValidationError(response.json())
         transaction = response.json()
@@ -237,13 +237,13 @@ def edit_transaction(request):
         categorizedData[data['category']
                         ]['totalSectorMonthExpense'] += transaction['debit']
 
-        response = requests.post(settings.BANKING_MICROSERVICE + "edit_transaction/",
-                                 data={
-                                     'transaction_id': data['transaction_id'],
-                                     'category': data['category'],
-                                     'note': request.data.get('note', None),
-                                 },
-                                 headers={'Authorization': token})
+        response = requests.put(settings.BANKING_MICROSERVICE + "edit_transaction/",
+                                data={
+                                    'transaction_id': data['transaction_id'],
+                                    'category': data['category'],
+                                    'note': request.data.get('note', None),
+                                },
+                                headers={'Authorization': token})
         if not response.ok:
             raise ValidationError(response.json())
 

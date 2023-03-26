@@ -9,6 +9,8 @@ import os
 import holidays
 import datetime
 
+searchBase = list()
+
 
 def preprocessing(transactions):
     # removing rows with date as empty cell
@@ -122,7 +124,7 @@ def preProcessingMonthWise(monthWiseTransactions, searchBase):
     monthWiseTransactions.Particulars = monthWiseTransactions['Particulars'].apply(
         updateParticular)
 
-    monthWiseTransactions['Sector'] = monthWiseTransactions['Particulars'].apply(
+    monthWiseTransactions['Category'] = monthWiseTransactions['Particulars'].apply(
         searchingSector)
     return monthWiseTransactions
 
