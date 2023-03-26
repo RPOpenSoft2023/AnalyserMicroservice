@@ -111,7 +111,8 @@ def getMonth(date):
 
 def getYear(date):
     date = str(date).split('-')
-    return int(date[0])
+    # return int(date[0])
+    return max(list(map(int, date)))
 
 # resolve error while updating the column for particulars
 
