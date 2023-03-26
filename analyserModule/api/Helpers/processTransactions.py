@@ -121,6 +121,7 @@ def preProcessingMonthWise(monthWiseTransactions, searchBase):
 
     monthWiseTransactions.Particulars = monthWiseTransactions['Particulars'].apply(
         updateParticular)
+
     monthWiseTransactions['Sector'] = monthWiseTransactions['Particulars'].apply(
         searchingSector)
     return monthWiseTransactions
