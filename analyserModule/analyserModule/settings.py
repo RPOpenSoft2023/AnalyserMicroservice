@@ -147,6 +147,9 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-USER_MICROSERVICE = 'http://34.105.83.175:80/user/api/'
-BANKING_MICROSERVICE = 'http://34.82.249.105:80/banking/api/'
+USER_MICROSERVICE = os.getenv('USER_MICROSERVICE')
+BANKING_MICROSERVICE = os.getenv('BANKING_MICROSERVICE')
 
+STATIC_URL = 'https://storage.googleapis.com/static-shiftbank/static/'
+
+CSRF_TRUSTED_ORIGINS = ['https://*.openshiftapps.com']
