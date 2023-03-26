@@ -113,7 +113,7 @@ def edit_transaction(request):
             else:
                 data[field] = request.data.get(field)
 
-        response = requests.post(settings.BANKING_MICROSERVICE + "get_transaction/",
+        response = requests.get(settings.BANKING_MICROSERVICE + "get_transaction/",
                                 data={'transaction_id': data['transaction_id']},
                                 headers = { 'Authorization': token })
         if not response.ok:
@@ -150,7 +150,7 @@ def edit_transaction(request):
         categorizedData[old_category]['totalSectorMonthExpense'] -= transaction['debit']
         categorizedData[data['category']]['totalSectorMonthExpense'] += transaction['debit']
 
-        response = requests.post(settings.BANKING_MICROSERVICE + "edit_transaction/",
+        response = requests.put(settings.BANKING_MICROSERVICE + "edit_transaction/",
                                 data={
                                         'transaction_id': data['transaction_id'],
                                         'category': data['category'],
