@@ -16,8 +16,6 @@ def removeDelimeterFromAmount(x):
   x = "".join(re.split(r"[-/;,\s]", str(x)))
   return float(x)
 
-
-
 def preprocessing(transactions):
     # removing rows with date as empty cell
     transactions = transactions.dropna(
@@ -26,6 +24,10 @@ def preprocessing(transactions):
     requiredColumnslist = ['Date', 'Particulars', 'Debit',
                            'Credit', 'Balance']  # Columns list we need
     transactions = transactions[requiredColumnslist]
+    transactions['Debit'] = transactions['Debit'].apply(removeDelimeterFromAmount)
+    transactions['Credit'] = transactions['Credit'].apply(removeDelimeterFromAmount)
+    transactions['Balance'] = transactions['Balance'].apply(removeDelimeterFromAmount)
+    print(transactions)
     return transactions
 
 
@@ -321,8 +323,8 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year, updatedB
 
     monthWiseTransactions = preProcessingMonthWise(
         monthWiseTransactions, searchBase)
-    monthWiseTransactions['Credit'] = monthWiseTransactions['Credit'].apply(removeDelimeterFromAmount)
-    monthWiseTransactions['Debit'] = monthWiseTransactions['Debit'].apply(removeDelimeterFromAmount)
+    # monthWiseTransactions['Credit'] = monthWiseTransactions['Credit'].apply(removeDelimeterFromAmount)
+    # monthWiseTransactions['Debit'] = monthWiseTransactions['Debit'].apply(removeDelimeterFromAmount)
     loanDetails = getLoanDetails(monthWiseTransactions)
     transactionTypes = getTransactionTypes(monthWiseTransactions)
     averageDayWiseExpense = getAverageDayWiseExpense(monthWiseTransactions)
