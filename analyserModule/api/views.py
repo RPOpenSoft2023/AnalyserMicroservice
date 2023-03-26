@@ -101,7 +101,7 @@ def bank_statement_analyse(request):
         return Response({"Error": str(e)}, status=400)
 
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def edit_transaction(request):
     try:
         token = request.headers.get('Authorization')
