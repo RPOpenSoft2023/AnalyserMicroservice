@@ -121,8 +121,8 @@ def preProcessingMonthWise(monthWiseTransactions, searchBase):
 
     # function to search sector from a function
     def searchingSector(particular):
-        print(searchBase)
-        print(type(searchBase), len(searchBase))
+        # print(searchBase)
+        # print(type(searchBase), len(searchBase))
         sectorsList = searchBase[0]
         sectorWiseCompanies = searchBase[1]
         # preprocessing of data will be on top
@@ -364,7 +364,7 @@ def getCashCaution(curr):
     cautionList = curr.get('storedCautionData')
     cashList = cautionList['cashData']
     dailyIncome = curr.get('averageDayWiseIncome')
-    print(dailyIncome, type(dailyIncome))
+    # print(dailyIncome, type(dailyIncome))
     for cashData in cashList:
         if cashData['Credit'] > 250000:
             cashFault.append(cashData)
@@ -430,7 +430,7 @@ def getHolidayChequeList(curr):
         for key in keyWord:
             boolVal = boolVal or key in data[1]['Particulars']
         if boolVal:
-            print(data)
+            # print(data)
             chequeInHoliday.append(data)
     return chequeInHoliday
 
