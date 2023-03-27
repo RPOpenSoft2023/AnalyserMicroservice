@@ -8,13 +8,14 @@ from django.conf import settings
 import os
 import holidays
 import datetime
-
+import calendar
 searchBase = list()
 
 
 def removeDelimeterFromAmount(x):
-  x = "".join(re.split(r"[-/;,\s]", str(x)))
-  return float(x)
+    x = "".join(re.split(r"[/,\s]", str(x)))
+    return float(x)
+
 
 def preprocessing(transactions):
     # removing rows with date as empty cell
@@ -24,9 +25,12 @@ def preprocessing(transactions):
     requiredColumnslist = ['Date', 'Particulars', 'Debit',
                            'Credit', 'Balance']  # Columns list we need
     transactions = transactions[requiredColumnslist]
-    transactions['Debit'] = transactions['Debit'].apply(removeDelimeterFromAmount)
-    transactions['Credit'] = transactions['Credit'].apply(removeDelimeterFromAmount)
-    transactions['Balance'] = transactions['Balance'].apply(removeDelimeterFromAmount)
+    transactions['Debit'] = transactions['Debit'].apply(
+        removeDelimeterFromAmount)
+    transactions['Credit'] = transactions['Credit'].apply(
+        removeDelimeterFromAmount)
+    transactions['Balance'] = transactions['Balance'].apply(
+        removeDelimeterFromAmount)
     # print(transactions)
     return transactions
 
@@ -87,9 +91,10 @@ def processing(transactions, accountNumber, token=None):
         # mergedTransactions.to_csv("transactions.csv")
         # with open("transactions.csv") as f:
         listOfTransactions = mergedTransactions.T.to_dict().values()
-        response = requests.post(settings.BANKING_MICROSERVICE + "add_transactions/",                             
-                                data={"account_number": accountNumber, "transactions": listOfTransactions},
-                                headers={'Authorization': token})
+        response = requests.post(settings.BANKING_MICROSERVICE + "add_transactions/",
+                                 data={"account_number": accountNumber,
+                                       "transactions": listOfTransactions},
+                                 headers={'Authorization': token})
         # print(response.json(), response.status_code)
         assert response.status_code == 200, "Unable to save the transaction data"
         # os.remove("transactions.csv")
@@ -286,14 +291,54 @@ def processingMonthWiseTransactions(monthWiseTransactions, month, year, updatedB
         return datetime.date(int(dateList[0]), int(dateList[1]), int(dateList[2]))
 
     # to get holiday data
+    def getSaturdayHolidays(year):
+        listFourthSaturdays = []
+        listSecondSaturdays = []
+        for month in range(1, 13):
+            cal = calendar.monthcalendar(year, month)
+            firstWeek = cal[0]
+            secondWeek = cal[1]
+            thirdWeek = cal[2]
+            fourthWeek = cal[3]
+            if firstWeek[calendar.SATURDAY]:
+                secondSaturdayDate = secondWeek[calendar.SATURDAY]
+                fourthSaturdayDate = fourthWeek[calendar.SATURDAY]
+            else:
+                secondSaturdayDate = thirdWeek[calendar.SATURDAY]
+                fifthWeek = cal[4]
+                fourthSaturdayDate = fifthWeek[calendar.SATURDAY]
+            listSecondSaturdays.append(
+                datetime.date(year, month, secondSaturdayDate))
+            listFourthSaturdays.append(
+                datetime.date(year, month, fourthSaturdayDate))
+        return (listSecondSaturdays, listFourthSaturdays)
 
     def getHolidayData(monthWiseTransactions):
         holidayTransactionData = []
+        isComputed = {}
+        startDate = getStartDate(monthWiseTransactions)
+        endDate = getEndDate(monthWiseTransactions)
+        startYear = startDate['year']
+        endYear = endDate['year']
+        for yearNum in range(startYear, endYear+1):
+            isComputed[str(yearNum)] = False
         for val in monthWiseTransactions.iterrows():
-            holidayIndia = holidays.India(val[1].year)
-            holidayList = list(holidayIndia.keys())
+            if not isComputed[str(val[1].year)]:
+                holidayIndia = holidays.India(val[1].year)
+                holidayList = list(holidayIndia.keys())
+                saturdayHolidays = getSaturdayHolidays(val[1].year)
+                listSecond = saturdayHolidays[0]
+                listFourth = saturdayHolidays[1]
+                isComputed[str(val[1].year)] = True
+
             if getDateTimeFormat(val[1].Date) in holidayList:
                 holidayName = (holidayIndia[val[1].Date])
+                holidayTransactionData.append((holidayName, val[1].to_dict()))
+            elif getDateTimeFormat(val[1].Date) in listSecond:
+                holidayName = 'Second Saturday'
+                holidayTransactionData.append((holidayName, val[1].to_dict()))
+            elif getDateTimeFormat(val[1].Date) in listFourth:
+                holidayName = 'Fourth Saturday'
                 holidayTransactionData.append((holidayName, val[1].to_dict()))
         return holidayTransactionData
 
