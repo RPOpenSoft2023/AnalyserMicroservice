@@ -27,7 +27,7 @@ def preprocessing(transactions):
     transactions['Debit'] = transactions['Debit'].apply(removeDelimeterFromAmount)
     transactions['Credit'] = transactions['Credit'].apply(removeDelimeterFromAmount)
     transactions['Balance'] = transactions['Balance'].apply(removeDelimeterFromAmount)
-    print(transactions)
+    # print(transactions)
     return transactions
 
 
