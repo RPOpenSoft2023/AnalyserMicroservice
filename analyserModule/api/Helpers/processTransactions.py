@@ -84,14 +84,15 @@ def processing(transactions, accountNumber, token=None):
             month = 0
             year += 1
     if token and not mergedTransactions.empty:
-        mergedTransactions.to_csv("transactions.csv")
-        with open("transactions.csv") as f:
-            response = requests.post(settings.BANKING_MICROSERVICE + "add_transactions/",                             data={"account_number": accountNumber},
-                                    headers={'Authorization': token},
-                                    files={"transactions": f})
-            # print(response.json(), response.status_code)
-            assert response.status_code == 200, "Unable to save the transaction data"
-        os.remove("transactions.csv")
+        # mergedTransactions.to_csv("transactions.csv")
+        # with open("transactions.csv") as f:
+        listOfTransactions = mergedTransactions.T.to_dict().values()
+        response = requests.post(settings.BANKING_MICROSERVICE + "add_transactions/",                             
+                                data={"account_number": accountNumber, "transactions": listOfTransactions},
+                                headers={'Authorization': token})
+        # print(response.json(), response.status_code)
+        assert response.status_code == 200, "Unable to save the transaction data"
+        # os.remove("transactions.csv")
     return disjointList
 
 
