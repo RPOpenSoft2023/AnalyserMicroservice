@@ -91,15 +91,19 @@ def processing(transactions, accountNumber, token=None):
         # mergedTransactions.to_csv("transactions.csv")
         # with open("transactions.csv") as f:
         columns = ['Date', 'Particulars', 'Debit',
-                           'Credit', 'Balance']
+                           'Credit', 'Balance', 'Category']
         transaction_data = {}
         for col in columns:
             transaction_data[col] = list(mergedTransactions[col])
         # listOfTransactions = json.dumps(mergedTransactions.T.to_dict().values())
+        print(transaction_data)
         response = requests.post(settings.BANKING_MICROSERVICE + "add_transactions/",                             
-                                data={"account_number": accountNumber, **transaction_data},
+                                json={
+                                "account_number": accountNumber,
+                                **transaction_data
+                            },
                                 headers={'Authorization': token})
-        # print(response.json(), response.status_code)
+        print(response.json(), response.status_code)
         assert response.status_code == 200, "Unable to save the transaction data"
         # os.remove("transactions.csv")
     return disjointList

@@ -94,14 +94,14 @@ WSGI_APPLICATION = 'analyserModule.wsgi.application'
 
 DATABASES = {
     'default': {
-        # 'ENGINE': 'django.db.backends.sqlite3',
-        # 'NAME': BASE_DIR / 'db.sqlite3',
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DATABASE_NAME'),
-        'USER': os.getenv('DATABASE_USER'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+        # 'ENGINE': 'django.db.backends.postgresql',
+        # 'NAME': os.getenv('DATABASE_NAME'),
+        # 'USER': os.getenv('DATABASE_USER'),
+        # 'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+        # 'HOST': '127.0.0.1',
+        # 'PORT': '5432',
     }
 }
 
@@ -147,8 +147,8 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-USER_MICROSERVICE = os.getenv('USER_MICROSERVICE')
-BANKING_MICROSERVICE = os.getenv('BANKING_MICROSERVICE')
+USER_MICROSERVICE = "https://users-ms.apps.sandbox-m3.1530.p1.openshiftapps.com/user/api/"
+BANKING_MICROSERVICE = 'http://127.0.0.1:8000/banking/api/'
 
 STATIC_URL = 'https://storage.googleapis.com/static-shiftbank/static/'
 

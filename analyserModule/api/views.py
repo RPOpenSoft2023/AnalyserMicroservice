@@ -92,19 +92,18 @@ def bank_account_init(request):
         file = request.data['file']
         token = request.headers.get('Authorization')
         accountNumber = request.data.get('account_number')
-
         if (token):
             response = requests.get(getattr(settings, "USER_MICROSERVICE", None) + "verify_token",
                                     headers={'Authorization': token}
-                                    )
+                                    )                 
             if (response.status_code != 200):
                 return Response({"message": "not logged in"}, status=401)
         else:
             return Response({"message": "not logged in"}, status=401)
-
+  
         if (not accountNumber):
             return Response({"message": "account number required"}, status=400)
-
+ 
         transactions = pd.read_csv(file)
         transactions = preprocessing(transactions)
         transactions['month'] = transactions['Date'].apply(getMonth)
@@ -199,6 +198,7 @@ def edit_transaction(request):
                                 data={
                                     'transaction_id': data['transaction_id']},
                                 headers={'Authorization': token})
+        print(response.json())
         if not response.ok:
             raise ValidationError(response.json())
         transaction = response.json()
@@ -207,7 +207,7 @@ def edit_transaction(request):
         # print(transaction['date'])
         date = transaction['date']
         analytics = monthWiseAnalytics.objects.filter(year=int(str(date).split(
-            '-')[0]), month=int(str(date).split('-')[1]) - 1, accountNumber=transaction.get('account'))[0]
+            '-')[0]), month=int(str(date).split('-')[1]) - 1, accountNumber=transaction.get('account'))[0]    
         categorizedData = analytics.categorizedData
         # update transaction types count
         old_category = transaction['category']
@@ -229,12 +229,12 @@ def edit_transaction(request):
                             ]['transactionTypes'][val] += typeDict[val]
 
         # category totals
-        categorizedData[old_category]['totalSectorMonthIncome'] -= transaction['credit']
+        categorizedData[old_category]['totalSectorMonthIncome'] -= float(transaction['credit'])
         categorizedData[data['category']
-                        ]['totalSectorMonthIncome'] += transaction['credit']
-        categorizedData[old_category]['totalSectorMonthExpense'] -= transaction['debit']
+                        ]['totalSectorMonthIncome'] += float(transaction['credit'])
+        categorizedData[old_category]['totalSectorMonthExpense'] -= float(transaction['debit'])
         categorizedData[data['category']
-                        ]['totalSectorMonthExpense'] += transaction['debit']
+                        ]['totalSectorMonthExpense'] += float(transaction['debit'])
 
         response = requests.put(settings.BANKING_MICROSERVICE + "edit_transaction/",
                                 data={
