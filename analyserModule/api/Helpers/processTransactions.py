@@ -86,9 +86,14 @@ def processing(transactions, accountNumber, token=None):
     if token and not mergedTransactions.empty:
         # mergedTransactions.to_csv("transactions.csv")
         # with open("transactions.csv") as f:
-        listOfTransactions = mergedTransactions.T.to_dict().values()
+        columns = ['Date', 'Particulars', 'Debit',
+                           'Credit', 'Balance']
+        transaction_data = {}
+        for col in columns:
+            transaction_data[col] = list(mergedTransactions[col])
+        # listOfTransactions = json.dumps(mergedTransactions.T.to_dict().values())
         response = requests.post(settings.BANKING_MICROSERVICE + "add_transactions/",                             
-                                data={"account_number": accountNumber, "transactions": listOfTransactions},
+                                data={"account_number": accountNumber, **transaction_data},
                                 headers={'Authorization': token})
         # print(response.json(), response.status_code)
         assert response.status_code == 200, "Unable to save the transaction data"
