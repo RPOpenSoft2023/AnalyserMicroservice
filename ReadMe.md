@@ -42,7 +42,7 @@
 - Install all the required packages
 
   ```
-  pip install -r requirements.txt
+  pip install -r ../requirements.txt
   ```
 - Make migrations
 
@@ -69,5 +69,5 @@
 - To access the django admin panel use following url
 
   ```
-  localhost:8001/admin
+  localhost:8002/admin
   ```
