@@ -1,6 +1,6 @@
 ﻿# AnalyserMicroservice
 ## Required Packages:
-- View [requirements.txt](https://github.com/RPOpenSoft2023/AnalyserMicroservice/blob/main/requirements.txt)
+- View requirements.txt in project directory.
 
 ## Instructions to build & install the software:
 - Clone the repository
