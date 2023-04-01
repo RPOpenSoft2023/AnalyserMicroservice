@@ -34,6 +34,27 @@
   ```
   source myenv/bin/activate
   ```
+- Add environment variables for connecting to Postgres Database and Users Microservice token verification
+  
+  Windows:
+  
+  ```
+  [System.Environment]::SetEnvironmentVariable('DATABASE_USER', 'postgres')
+  [System.Environment]::SetEnvironmentVariable('DATABASE_PASSWORD', 'demo')
+  [System.Environment]::SetEnvironmentVariable('DATABASE_NAME', 'analyser-db')
+  [System.Environment]::SetEnvironmentVariable('USER_MICROSERVICE', 'http://localhost:8000/user/api/')
+  [System.Environment]::SetEnvironmentVariable('BANKING_MICROSERVICE', 'http://localhost:8001/banking/api/')
+
+  ```
+  Linux:
+  
+  ```
+  export DATABASE_USER='postgres'
+  export DATABASE_PASSWORD='demo'
+  export DATABASE_NAME='analyser-db'
+  export USER_MICROSERVICE='http://localhost:8000/user/api'
+  export BANKING_MICROSERVICE='http://localhost:8001/banking/api/'
+  ```
 - Change directory to the cloned folder i.e. analyserModule
 
   ```
